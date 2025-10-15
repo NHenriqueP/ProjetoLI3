@@ -2,4 +2,4 @@
 
 * João Pedro Cunha Cerqueira - A111753 - Cerqueira4618
 * Rafael Figueiras Esteves - A112032 - a112032
-* Nome Completo Aluno 3 - AXXXXXX - username github
+* Nuno Henrique Dias Pereira - A110067 - NHenriqueP
