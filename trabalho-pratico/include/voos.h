@@ -3,12 +3,10 @@
 
 typedef struct voo {
     char idvoo[8];
-    /*
-    Date departure;
-    Date actualdeparture;
-    Date arrival;
-    Date actualarrival;
-    */
+    Horario departure;
+    Horario actualdeparture;
+    Horario arrival;
+    Horario actualarrival;
     int gate;
     Status estado;
     char iataorigem[4];
@@ -18,11 +16,18 @@ typedef struct voo {
     char *tracking_url;
 } Voo;
 
+typedef struct horario {
+    Date data;
+    Hora hora;
+} Horario;
 
 typedef struct date {
-    int year, month, day, hour, minute;
+    int year, month, day;
 } Date;
 
+typedef struct hora {
+    int hora,minuto;
+} Hora;
 
 typedef enum {
     ON_TIME,

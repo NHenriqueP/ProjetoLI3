@@ -2,10 +2,10 @@
 #define AERONAVE
 
 typedef struct aeronave {
-    char id[10];
-    char fabricante[50];
+    char id[9];
+    char fabricante[15];
     char modelo[15];
-    int anofabricacao;//data
+    int anofabricacao;
     int capacidade;
     int alcance;
 } Aeronave;
