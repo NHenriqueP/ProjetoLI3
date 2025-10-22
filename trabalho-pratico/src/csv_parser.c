@@ -157,14 +157,14 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
     a->latitude  = strdup(latitude);
     a->longitude = strdup(longitude);
     a->icao      = strdup(icao);
-    a->tipo      = tipo;
+    a->tipo      = strdup(tipo);
 
     // Verificação de alocação
     if (!a->iata || !a->nome || !a->cidade || !a->pais || 
-        !a->latitude || !a->longitude || !a->icao) {
+        !a->latitude || !a->longitude || !a->icao || !a->tipo) {
         free(a->iata); free(a->nome); free(a->cidade);
         free(a->pais); free(a->latitude); free(a->longitude);
-        free(a->icao); free(a);
+        free(a->icao); free(a->tipo); free(a);
         r.motivo = strdup("Erro de alocação de memória");
         return r;
     }

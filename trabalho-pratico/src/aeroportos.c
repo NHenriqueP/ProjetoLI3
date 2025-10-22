@@ -1,6 +1,7 @@
 #include <aeroportos.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 // Variável global para o manager (inicializada como NULL)
 static AeroportoManager *mgr = NULL; // static faz com que seja so visivel neste ficheiro
@@ -62,6 +63,52 @@ int airport_manager_add(AeroportoManager *manager, Aeroporto airport) {
     return 1;
 }
 
+// Forward declaration para uso em copy_airport
+static void free_airport(Aeroporto *airport);
+
+// Cópia profunda dos campos de Aeroporto
+static int copy_airport(Aeroporto *dst, const Aeroporto *src) {
+    memset(dst, 0, sizeof(*dst));
+    if (src->iata)      { dst->iata = strdup(src->iata); if (!dst->iata) goto fail; }
+    if (src->nome)      { dst->nome = strdup(src->nome); if (!dst->nome) goto fail; }
+    if (src->cidade)    { dst->cidade = strdup(src->cidade); if (!dst->cidade) goto fail; }
+    if (src->pais)      { dst->pais = strdup(src->pais); if (!dst->pais) goto fail; }
+    if (src->latitude)  { dst->latitude = strdup(src->latitude); if (!dst->latitude) goto fail; }
+    if (src->longitude) { dst->longitude = strdup(src->longitude); if (!dst->longitude) goto fail; }
+    if (src->icao)      { dst->icao = strdup(src->icao); if (!dst->icao) goto fail; }
+    if (src->tipo)      { dst->tipo = strdup(src->tipo); if (!dst->tipo) goto fail; }
+    return 1;
+fail:
+    free_airport(dst);
+    return 0;
+}
+
+// Função adaptadora para o CSV parser: recebe void* e const void* e adiciona ao gestor
+int airport_manager_add_from_ptr(void *gestor, const void *entidade) {
+    if (!gestor || !entidade) return 0;
+    AeroportoManager *manager = (AeroportoManager*)gestor;
+    const Aeroporto *src = (const Aeroporto*)entidade;
+
+    // Expandir se necessário
+    if (manager->count >= manager->capacity) {
+        if (!expand_capacity(manager)) return 0;
+    }
+
+    Aeroporto *slot = &manager->airports[manager->count];
+    if (!copy_airport(slot, src)) {
+        return 0;
+    }
+    manager->count++;
+
+    // Transferência de propriedade: libertar a entidade original
+    // (assumimos que foi alocada dinamicamente pelo parser)
+    Aeroporto *to_free = (Aeroporto*)entidade;
+    free_airport(to_free);
+    free(to_free);
+
+    return 1;
+}
+
 // Procura um aeroporto por IATA
 Aeroporto* airport_manager_find_by_iata(AeroportoManager *manager, const char *iata) {
     if (!manager || !iata) return NULL;
@@ -73,6 +120,29 @@ Aeroporto* airport_manager_find_by_iata(AeroportoManager *manager, const char *i
     }
     
     return NULL;
+}
+
+// Procura por ICAO
+Aeroporto* airport_manager_find_by_icao(AeroportoManager *manager, const char *icao) {
+    if (!manager || !icao) return NULL;
+    for (int i = 0; i < manager->count; i++) {
+        if (manager->airports[i].icao && strcmp(manager->airports[i].icao, icao) == 0) {
+            return &manager->airports[i];
+        }
+    }
+    return NULL;
+}
+
+// Procura por código (IATA de 3 chars ou ICAO de 4 chars)
+Aeroporto* airport_manager_find_by_code(AeroportoManager *manager, const char *code) {
+    if (!manager || !code) return NULL;
+    size_t len = strlen(code);
+    if (len == 3) return airport_manager_find_by_iata(manager, code);
+    if (len == 4) return airport_manager_find_by_icao(manager, code);
+    // fallback: tenta ambos
+    Aeroporto *a = airport_manager_find_by_iata(manager, code);
+    if (a) return a;
+    return airport_manager_find_by_icao(manager, code);
 }
 
 
@@ -88,6 +158,7 @@ static void free_airport(Aeroporto *airport) {
     free(airport->latitude);
     free(airport->longitude);
     free(airport->icao);
+    free(airport->tipo);
 }
 
 // Liberta toda a memória do manager
@@ -183,5 +254,36 @@ int airport_set_tipo(Aeroporto *airport, char *tipo) {
     if (!airport) return 0;
     airport->tipo = tipo;
     return 1;
+}
+
+// Devolve o índice do aeroporto com o IATA dado, ou -1 se não existir
+int airport_manager_index_by_iata(AeroportoManager *manager, const char *iata) {
+    if (!manager || !iata) return -1;
+    for (int i = 0; i < manager->count; i++) {
+        if (manager->airports[i].iata && strcmp(manager->airports[i].iata, iata) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// Escreve um resumo textual do aeroporto no buffer fornecido
+int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize) {
+    if (!airport || !buf || bufsize == 0) return 0;
+    const char *iata = airport->iata ? airport->iata : "";
+    const char *icao = airport->icao ? airport->icao : "";
+    const char *nome = airport->nome ? airport->nome : "";
+    const char *cidade = airport->cidade ? airport->cidade : "";
+    const char *pais = airport->pais ? airport->pais : "";
+    const char *lat = airport->latitude ? airport->latitude : "";
+    const char *lon = airport->longitude ? airport->longitude : "";
+    const char *tipo = airport->tipo ? airport->tipo : "";
+
+    int written = snprintf(
+        buf, bufsize,
+        "IATA: %s\nICAO: %s\nNome: %s\nCidade: %s\nPaís: %s\nLatitude: %s\nLongitude: %s\nTipo: %s",
+        iata, icao, nome, cidade, pais, lat, lon, tipo
+    );
+    return (written >= 0 && (size_t)written < bufsize) ? 1 : 0;
 }
 
