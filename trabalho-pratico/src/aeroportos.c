@@ -1,5 +1,4 @@
 #include <aeroportos.h>
-#include <aeroportos.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -76,26 +75,7 @@ Aeroporto* airport_manager_find_by_iata(AeroportoManager *manager, const char *i
     return NULL;
 }
 
-// Procura um aeroporto por ICAO
-Aeroporto* airport_manager_find_by_icao(AeroportoManager *manager, const char *icao) {
-    if (!manager || !icao) return NULL;
-    
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].icao && strcmp(manager->airports[i].icao, icao) == 0) {
-            return &manager->airports[i];
-        }
-    }
-    
-    return NULL;
-}
 
-// Obtém o número de aeroportos
-int airport_manager_count(AeroportoManager *manager) {
-    if (manager) {
-        return manager->count;
-    }
-    return 0;
-}
 
 // Liberta a memória de um aeroporto
 static void free_airport(Aeroporto *airport) {
@@ -131,7 +111,6 @@ void cleanup_airport_manager() {
     }
 }
 
-// ========= Funcoes de ler valores =========
 
 // Obtém o código IATA de um aeroporto
 const char* airport_get_iata(Aeroporto *airport) {
@@ -141,63 +120,7 @@ const char* airport_get_iata(Aeroporto *airport) {
     return NULL;
 }
 
-// Obtém o nome de um aeroporto
-const char* airport_get_nome(Aeroporto *airport) {
-    if (airport) {
-        return airport->nome;
-    }
-    return NULL;
-}
 
-// Obtém a cidade de um aeroporto
-const char* airport_get_cidade(Aeroporto *airport) {
-    if (airport) {
-        return airport->cidade;
-    }
-    return NULL;
-}
-
-// Obtém o país de um aeroporto
-const char* airport_get_pais(Aeroporto *airport) {
-    if (airport) {
-        return airport->pais;
-    }
-    return NULL;
-}
-
-// Obtém a latitude de um aeroporto
-const char* airport_get_latitude(Aeroporto *airport) {
-    if (airport) {
-        return airport->latitude;
-    }
-    return NULL;
-}
-
-// Obtém a longitude de um aeroporto
-const char* airport_get_longitude(Aeroporto *airport) {
-    if (airport) {
-        return airport->longitude;
-    }
-    return NULL;
-}
-
-// Obtém o código ICAO de um aeroporto
-const char* airport_get_icao(Aeroporto *airport) {
-    if (airport) {
-        return airport->icao;
-    }
-    return NULL;
-}
-
-// Obtém o tipo de um aeroporto
-Tipo airport_get_tipo(Aeroporto *airport) {
-    if (airport) {
-        return airport->tipo;
-    }
-    return -1;
-}
-
-// ========= Funcoes de escrever valores =========
 
 // Define o código IATA de um aeroporto
 int airport_set_iata(Aeroporto *airport, const char *iata) {
@@ -256,142 +179,9 @@ int airport_set_icao(Aeroporto *airport, const char *icao) {
 }
 
 // Define o tipo de um aeroporto
-int airport_set_tipo(Aeroporto *airport, Tipo tipo) {
+int airport_set_tipo(Aeroporto *airport, char *tipo) {
     if (!airport) return 0;
     airport->tipo = tipo;
     return 1;
 }
 
-// ==================== FUNÇÕES DE PESQUISA ADICIONAIS ====================
-
-// Procura aeroportos por cidade
-Aeroporto** airport_manager_find_by_cidade(AeroportoManager *manager, const char *cidade, int *count) {
-    if (!manager || !cidade || !count) return NULL;
-    
-    *count = 0;
-    
-    // Conta quantos aeroportos existem nessa cidade
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].cidade && strcmp(manager->airports[i].cidade, cidade) == 0) {
-            (*count)++;
-        }
-    }
-    
-    if (*count == 0) return NULL;
-    
-    // Aloca array para os resultados
-    Aeroporto **results = malloc(sizeof(Aeroporto*) * (*count));
-    if (!results) {
-        *count = 0;
-        return NULL;
-    }
-    
-    // Preenche o array com os aeroportos encontrados
-    int index = 0;
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].cidade && strcmp(manager->airports[i].cidade, cidade) == 0) {
-            results[index++] = &manager->airports[i];
-        }
-    }
-    
-    return results;
-}
-
-// Procura aeroportos por país
-Aeroporto** airport_manager_find_by_pais(AeroportoManager *manager, const char *pais, int *count) {
-    if (!manager || !pais || !count) return NULL;
-    
-    *count = 0;
-    
-    // Conta quantos aeroportos existem nesse país
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].pais && strcmp(manager->airports[i].pais, pais) == 0) {
-            (*count)++;
-        }
-    }
-    
-    if (*count == 0) return NULL;
-    
-    // Aloca array para os resultados
-    Aeroporto **results = malloc(sizeof(Aeroporto*) * (*count));
-    if (!results) {
-        *count = 0;
-        return NULL;
-    }
-    
-    // Preenche o array com os aeroportos encontrados
-    int index = 0;
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].pais && strcmp(manager->airports[i].pais, pais) == 0) {
-            results[index++] = &manager->airports[i];
-        }
-    }
-    
-    return results;
-}
-
-// Procura aeroportos por tipo
-Aeroporto** airport_manager_find_by_tipo(AeroportoManager *manager, Tipo tipo, int *count) {
-    if (!manager || !count) return NULL;
-    
-    *count = 0;
-    
-    // Conta quantos aeroportos existem desse tipo
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].tipo == tipo) {
-            (*count)++;
-        }
-    }
-    
-    if (*count == 0) return NULL;
-    
-    // Aloca array para os resultados
-    Aeroporto **results = malloc(sizeof(Aeroporto*) * (*count));
-    if (!results) {
-        *count = 0;
-        return NULL;
-    }
-    
-    // Preenche o array com os aeroportos encontrados
-    int index = 0;
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].tipo == tipo) {
-            results[index++] = &manager->airports[i];
-        }
-    }
-    
-    return results;
-}
-
-// Procura aeroportos por nome (parcial)
-Aeroporto** airport_manager_find_by_nome(AeroportoManager *manager, const char *nome_parcial, int *count) {
-    if (!manager || !nome_parcial || !count) return NULL;
-    
-    *count = 0;
-    
-    // Conta quantos aeroportos têm esse nome (busca parcial)
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].nome && strstr(manager->airports[i].nome, nome_parcial)) {
-            (*count)++;
-        }
-    }
-    
-    if (*count == 0) return NULL;
-    
-    // Aloca array para os resultados
-    Aeroporto **results = malloc(sizeof(Aeroporto*) * (*count));
-    if (!results) {
-        *count = 0;
-        return NULL;
-    }
-    
-    // Preenche o array com os aeroportos encontrados
-    int index = 0;
-    for (int i = 0; i < manager->count; i++) {
-        if (manager->airports[i].nome && strstr(manager->airports[i].nome, nome_parcial)) {
-            results[index++] = &manager->airports[i];
-        }
-    }
-    
-    return results;
-}

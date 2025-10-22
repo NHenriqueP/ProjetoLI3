@@ -10,7 +10,7 @@ typedef struct aeroporto {
     char *latitude;
     char *longitude;
     char *icao;
-    Tipo tipo;
+    char *tipo;
 } Aeroporto;
 
 typedef struct {
@@ -20,13 +20,7 @@ typedef struct {
 } AeroportoManager;
 
 
-typedef enum { //eliminar se não necessario
-    small_airport,
-    medium_airport,
-    large_airport,
-    heliport,
-    seaplane_base,
-} Tipo;
+
 
 
 
