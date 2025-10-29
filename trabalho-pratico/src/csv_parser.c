@@ -5,6 +5,8 @@
 #include "csv_parser.h"        
 #include "aeroportos.h"    
 #include <ctype.h>
+#include <errno.h> /* Este ficheiro inclui <errno.h> para permitir que o código verifique e interprete
+ * códigos de erro produzidos por chamadas de biblioteca ou do sistema.*/ 
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -23,14 +25,21 @@ int csv_parser(
 ) {
     FILE *ficheiro = fopen(caminho_csv, "r");
     if (!ficheiro) {
-        fprintf(stderr, "Erro ao abrir ficheiro: %s\n", caminho_csv);
+        fputs("Erro ao abrir ficheiro '", stderr);
+        fputs(caminho_csv ? caminho_csv : "<NULL>", stderr);
+        fputs("': ", stderr);
+        fputs(strerror(errno), stderr);
+        fputc('\n', stderr);
         return 0;
     }
 
     FILE *ficheiro_erros_ptr = NULL;
     char *linha = NULL;
-    int tam = 0;
-    int lida;
+    // getline() usa size_t para o tamanho  por isso o uso do size_t 
+    size_t tam = 0;
+    // 'lida' guarda o resultado de getline(): número de bytes lidos ou -1 em EOF/erro.
+    // getline() retorna ssize_t (signed) para poder indicar -1, por isso usamos ssize_t.
+    ssize_t lida;
     char *header = NULL;
     bool header_lido = false;
     int contador_validos = 0;
@@ -48,12 +57,13 @@ int csv_parser(
         }
 
         // Dividir linha em campos
-        char *fields[64];
+        char *fields[15];
         int n_fields = 0;
         char *tmp = linha;
         char *token;
         char delim[2] = { separador, '\0' };
-        while ((token = strsep(&tmp, delim)) && n_fields < 64) {
+        int max_fields = 15;
+        while (n_fields < max_fields && (token = strsep(&tmp, delim)) != NULL) {
             fields[n_fields++] = token;
         }
 
@@ -65,12 +75,15 @@ int csv_parser(
             if (!ficheiro_erros_ptr) {
                 ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
                 if (!ficheiro_erros_ptr) {
-                    fprintf(stderr, "Erro ao criar ficheiro de erros: %s\n", ficheiro_erros);
+                    fputs("Erro ao criar ficheiro de erros: ", stderr);
+                    fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
+                    fputc('\n', stderr);
                     break;
                 }
             }
             // Escreve a linha inválida
-            fprintf(ficheiro_erros_ptr, "%s\n", linha);
+            fputs(linha, ficheiro_erros_ptr);
+            fputc('\n', ficheiro_erros_ptr);
         } else {
             // Adiciona entidade válida ao gestor
             add_func(gestor, resultado.entidade);
@@ -121,7 +134,7 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
         return r;
     }
 
-    if (!is_number(latitude) || !is_number(longitude)) {
+    if (!validar_latitude(latitude) || !validar_longitude(longitude)) {
         r.motivo = ("Latitude ou longitude inválida");
         return r;
     }
@@ -167,6 +180,7 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
     r.entidade = a;
     return r;
 }
+
 // Verifica se a string está no formato correto de coordenada
 int verifica_coordenadas(const char *s, int digitos_max) {
     if (!s || *s == '\0') return 0;
@@ -211,4 +225,27 @@ int tipo_aeroporto_valido(char *tipo) {
         strcmp(tipo, "large_airport") == 0 ||
         strcmp(tipo, "heliport") == 0 ||
         strcmp(tipo, "seaplane_base") == 0;
+}
+
+// Valida se a string é um código IATA (3 letras)
+int validar_iata(const char *s) {
+    if (!s) return 0;
+    int len = (int)strlen(s);
+    if (len != 3) return 0;
+    for (int i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)s[i];
+        if (c < 'A' || c > 'Z') return 0; // apenas maiúsculas A-Z
+    }
+    return 1;
+}
+
+// Valida se a string é um código ICAO (4 caracteres alfanuméricos)
+int validar_icao(const char *s) {
+    if (!s) return 0;
+    size_t len = strlen(s);
+    if (len != 4) return 0;
+    for (size_t i = 0; i < len; i++) {
+        if (!isalnum((unsigned char)s[i])) return 0;
+    }
+    return 1;
 }
