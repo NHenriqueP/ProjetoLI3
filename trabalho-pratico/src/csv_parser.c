@@ -105,14 +105,14 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
     }
 
     // Extrair e limpar campos
-    char *iata      = trim(fields[0]);
-    char *nome      = trim(fields[1]);
-    char *cidade    = trim(fields[2]);
-    char *pais      = trim(fields[3]);
-    char *latitude  = trim(fields[4]);
-    char *longitude = trim(fields[5]);
-    char *icao      = trim(fields[6]);
-    char *tipo      = trim(fields[7]);
+    char *iata      = (fields[0]);
+    char *nome      = (fields[1]);
+    char *cidade    = (fields[2]);
+    char *pais      = (fields[3]);
+    char *latitude  = (fields[4]);
+    char *longitude = (fields[5]);
+    char *icao      = (fields[6]);
+    char *tipo      = (fields[7]);
 
     
     if (!validar_iata(iata)) {
