@@ -13,9 +13,6 @@
 typedef int (*GestorAddFunc)(void *gestor, const void *entidade);
 
 
-
-
-
 int csv_parser(
     const char *caminho_csv,       // Caminho do ficheiro a ler
     const char *ficheiro_erros,    // Caminho para o ficheiro de erros
@@ -90,7 +87,6 @@ int csv_parser(
     return contador_validos;
 }
 
-
 ParseResultado parse_airport_line(char **fields, int n_fields) {
     ParseResultado r;
     r.valido = false;
@@ -140,9 +136,6 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
     }
 
 
-
-
-    
     Aeroporto *a = malloc(sizeof(Aeroporto));
     if (!a) {
         r.motivo = strdup("Falha de memória ao criar aeroporto");
@@ -209,10 +202,6 @@ int validar_longitude(const char *s) {
     if (!(v >= -180.0 && v <= 180.0)) return 0;
     return 1;
 }
-
-
-
-
 
 int tipo_aeroporto_valido(char *tipo) {
     if (!tipo) return 0;
