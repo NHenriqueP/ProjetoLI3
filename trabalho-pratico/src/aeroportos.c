@@ -68,7 +68,7 @@ static void free_airport(Aeroporto *airport);
 
 // Cópia profunda dos campos de Aeroporto
 static int copy_airport(Aeroporto *dst, const Aeroporto *src) {
-    memset(dst, 0, sizeof(*dst));
+    *dst = (Aeroporto){0};
     if (src->iata)      { dst->iata = strdup(src->iata); if (!dst->iata) goto fail; }
     if (src->nome)      { dst->nome = strdup(src->nome); if (!dst->nome) goto fail; }
     if (src->cidade)    { dst->cidade = strdup(src->cidade); if (!dst->cidade) goto fail; }
@@ -268,8 +268,20 @@ int airport_manager_index_by_iata(AeroportoManager *manager, const char *iata) {
 }
 
 // Escreve um resumo textual do aeroporto no buffer fornecido
+static int buf_append(char *dst, size_t dstsz, const char *s) {
+    if (!dst || !s || dstsz == 0) return 0;
+    size_t len = 0;
+    while (len < dstsz && dst[len] != '\0') len++;
+    if (len >= dstsz) return 0;
+    size_t i = 0;
+    while (s[i] && (len + 1) < dstsz) dst[len++] = s[i++];
+    dst[len] = '\0';
+    return s[i] == '\0';
+}
+
 int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize) {
     if (!airport || !buf || bufsize == 0) return 0;
+    buf[0] = '\0';
     const char *iata = airport->iata ? airport->iata : "";
     const char *icao = airport->icao ? airport->icao : "";
     const char *nome = airport->nome ? airport->nome : "";
@@ -279,11 +291,85 @@ int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize) {
     const char *lon = airport->longitude ? airport->longitude : "";
     const char *tipo = airport->tipo ? airport->tipo : "";
 
-    int written = snprintf(
-        buf, bufsize,
-        "IATA: %s\nICAO: %s\nNome: %s\nCidade: %s\nPaís: %s\nLatitude: %s\nLongitude: %s\nTipo: %s",
-        iata, icao, nome, cidade, pais, lat, lon, tipo
-    );
-    return (written >= 0 && (size_t)written < bufsize) ? 1 : 0;
+    return
+        buf_append(buf, bufsize, "IATA: ") && buf_append(buf, bufsize, iata) && buf_append(buf, bufsize, "\n") &&
+        buf_append(buf, bufsize, "ICAO: ") && buf_append(buf, bufsize, icao) && buf_append(buf, bufsize, "\n") &&
+        buf_append(buf, bufsize, "Nome: ") && buf_append(buf, bufsize, nome) && buf_append(buf, bufsize, "\n") &&
+        buf_append(buf, bufsize, "Cidade: ") && buf_append(buf, bufsize, cidade) && buf_append(buf, bufsize, "\n") &&
+        buf_append(buf, bufsize, "País: ") && buf_append(buf, bufsize, pais) && buf_append(buf, bufsize, "\n") &&
+        buf_append(buf, bufsize, "Latitude: ") && buf_append(buf, bufsize, lat) && buf_append(buf, bufsize, "\n") &&
+        buf_append(buf, bufsize, "Longitude: ") && buf_append(buf, bufsize, lon) && buf_append(buf, bufsize, "\n") &&
+        buf_append(buf, bufsize, "Tipo: ") && buf_append(buf, bufsize, tipo);
+}
+
+/* --------------------- Pointer-based manager implementation ------------------ */
+
+// Create a manager that stores Aeroporto* pointers (takes ownership)
+AeroportoPtrManager* airport_ptr_manager_create() {
+    AeroportoPtrManager *m = malloc(sizeof(AeroportoPtrManager));
+    if (!m) return NULL;
+    m->capacity = 1024;
+    m->count = 0;
+    m->airports = calloc((size_t)m->capacity, sizeof(Aeroporto*));
+    if (!m->airports) { free(m); return NULL; }
+    return m;
+}
+
+void airport_ptr_manager_destroy(AeroportoPtrManager *manager) {
+    if (!manager) return;
+    for (int i = 0; i < manager->count; i++) {
+        if (manager->airports[i]) {
+            free_airport(manager->airports[i]);
+            free(manager->airports[i]);
+        }
+    }
+    free(manager->airports);
+    free(manager);
+}
+
+static int expand_capacity_ptr(AeroportoPtrManager *manager) {
+    int new_capacity = manager->capacity * 2;
+    Aeroporto **new_arr = realloc(manager->airports, sizeof(Aeroporto*) * new_capacity);
+    if (!new_arr) return 0;
+    manager->airports = new_arr;
+    manager->capacity = new_capacity;
+    return 1;
+}
+
+// Add a parser-allocated Aeroporto* to the manager (takes ownership)
+int airport_ptr_manager_add_from_ptr(AeroportoPtrManager *manager, Aeroporto *entidade) {
+    if (!manager || !entidade) return 0;
+    if (manager->count >= manager->capacity) {
+        if (!expand_capacity_ptr(manager)) return 0;
+    }
+    manager->airports[manager->count++] = entidade;
+    return 1;
+}
+
+// Find by IATA in pointer manager
+Aeroporto* airport_ptr_manager_find_by_iata(AeroportoPtrManager *manager, const char *iata) {
+    if (!manager || !iata) return NULL;
+    for (int i = 0; i < manager->count; i++) {
+        Aeroporto *a = manager->airports[i];
+        if (a && a->iata && strcmp(a->iata, iata) == 0) return a;
+    }
+    return NULL;
+}
+
+int airport_ptr_manager_index_by_iata_ptr(AeroportoPtrManager *manager, const char *iata) {
+    if (!manager || !iata) return -1;
+    for (int i = 0; i < manager->count; i++) {
+        Aeroporto *a = manager->airports[i];
+        if (a && a->iata && strcmp(a->iata, iata) == 0) return i;
+    }
+    return -1;
+}
+
+// Adapter to match the generic csv_parser signature
+int airport_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
+    if (!gestor || !entidade) return 0;
+    AeroportoPtrManager *m = (AeroportoPtrManager*)gestor;
+    Aeroporto *a = (Aeroporto*)entidade;
+    return airport_ptr_manager_add_from_ptr(m, a);
 }
 

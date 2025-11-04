@@ -1,6 +1,25 @@
 #ifndef VOO
 #define VOO
 
+typedef struct date {
+    int year, month, day;
+} Date;
+
+typedef struct hora {
+    int hora, minuto;
+} Hora;
+
+typedef struct horario {
+    Date data;
+    Hora hora;
+} Horario;
+
+typedef enum {
+    ON_TIME,
+    DELAYED,
+    CANCELLED
+} Status;
+
 typedef struct voo {
     char idvoo[8];
     Horario departure;
@@ -15,24 +34,5 @@ typedef struct voo {
     char airline[50];
     char *tracking_url;
 } Voo;
-
-typedef struct horario {
-    Date data;
-    Hora hora;
-} Horario;
-
-typedef struct date {
-    int year, month, day;
-} Date;
-
-typedef struct hora {
-    int hora,minuto;
-} Hora;
-
-typedef enum {
-    ON_TIME,
-    DELAYED,
-    CANCELLED
-} Status;
 
 #endif

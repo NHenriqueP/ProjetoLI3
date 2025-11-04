@@ -21,6 +21,13 @@ typedef struct {
     int capacity;
 } AeroportoManager;
 
+// Manager that stores pointers to Aeroporto (takes ownership of pointers)
+typedef struct {
+    Aeroporto **airports;
+    int count;
+    int capacity;
+} AeroportoPtrManager;
+
 
 // Criação e destruição do gestor
 AeroportoManager* airport_manager_create();
@@ -40,6 +47,18 @@ int airport_manager_index_by_iata(AeroportoManager *manager, const char *iata);
 
 // Resumo formatado de um aeroporto no buffer fornecido
 int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize);
+
+/* Pointer-based manager API (uses parser-allocated Aeroporto* directly)
+ * These functions differ from the value-based manager in that they store
+ * and free the pointers returned by the CSV parser instead of deep-copying.
+ */
+AeroportoPtrManager* airport_ptr_manager_create();
+void airport_ptr_manager_destroy(AeroportoPtrManager *manager);
+int airport_ptr_manager_add_from_ptr(AeroportoPtrManager *manager, Aeroporto *entidade);
+Aeroporto* airport_ptr_manager_find_by_iata(AeroportoPtrManager *manager, const char *iata);
+int airport_ptr_manager_index_by_iata_ptr(AeroportoPtrManager *manager, const char *iata);
+// Adapter compatible with generic csv_parser: takes (void*, const void*)
+int airport_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade);
 
 
 

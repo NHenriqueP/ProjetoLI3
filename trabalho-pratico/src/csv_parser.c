@@ -5,14 +5,52 @@
 #include "csv_parser.h"        
 #include "aeroportos.h"    
 #include <ctype.h>
-#include <errno.h> /* Este ficheiro inclui <errno.h> para permitir que o código verifique e interprete
- * códigos de erro produzidos por chamadas de biblioteca ou do sistema.*/ 
+#include <errno.h> /* Este ficheiro inclui <errno.h> para permitir que o código verifique e interprete códigos de erro produzidos por chamadas de biblioteca ou do sistema.*/ 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 
 // Função que adiciona um elemento válido ao gestor
 typedef int (*GestorAddFunc)(void *gestor, const void *entidade);
+
+// Helper: CSV split with double-quote support (RFC4180-ish)
+static int csv_split_quoted(
+    char *s,//linha que se transforma em tokens
+    char sep,// o separador entre os tokens é a ','
+    char **out,//array onde ficam os ponteiros para o inicio de cada campo; ex: iaca
+    int max_out//número máximo de carateres
+) 
+{
+    if (!s || !out || max_out <= 0) return 0;
+    int n = 0;
+    int inq = 0;
+    char *r = s;
+    char *w = s;
+    out[n++] = w;
+    while (*r) {
+        char c = *r;
+        if (c == '"') {
+            if (inq && r[1] == '"') { 
+                *w++ = '"';
+                r += 2;
+                continue;
+            }
+            inq = !inq; 
+            r++;
+            continue;
+        }
+        if (!inq && c == sep) {
+            *w++ = '\0';
+            if (n < max_out) out[n++] = w;
+            r++;
+            continue;
+        }
+        *w++ = c;
+        r++;
+    }
+    *w = '\0';
+    return n;
+}
 
 
 int csv_parser(
@@ -27,7 +65,7 @@ int csv_parser(
     if (!ficheiro) {
         fputs("Erro ao abrir ficheiro '", stderr);
         fputs(caminho_csv ? caminho_csv : "<NULL>", stderr);
-        fputs("': ", stderr);
+        fputs("': ", stderr);//fecha a aspa e separa.
         fputs(strerror(errno), stderr);
         fputc('\n', stderr);
         return 0;
@@ -46,7 +84,7 @@ int csv_parser(
 
     while ((lida = getline(&linha, &tam, ficheiro)) != -1) {
         // Remover \n e \r
-        while (lida > 0 && (linha[lida - 1] == '\n' || linha[lida - 1] == '\r'))
+        while (lida > 0 && (linha[lida - 1] == '\n' || linha[lida - 1] == '\r'))// \r serve para garantir compatibilidade com windows
             linha[--lida] = '\0';
 
         // Guardar o cabeçalho (primeira linha) e continuar
@@ -56,16 +94,10 @@ int csv_parser(
             continue;
         }
 
-        // Dividir linha em campos
+        // Dividir linha em campos (suporta aspas e vírgulas dentro de aspas)
         char *fields[15];
-        int n_fields = 0;
-        char *tmp = linha;
-        char *token;
-        char delim[2] = { separador, '\0' };
         int max_fields = 15;
-        while (n_fields < max_fields && (token = strsep(&tmp, delim)) != NULL) {
-            fields[n_fields++] = token;
-        }
+        int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
 
         // Validar linha com o parser específico fornecido
         ParseResultado resultado = parser_func(fields, n_fields);
@@ -109,7 +141,7 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
     // Esperamos exatamente 8 campos 
     // Exemplo: IATA, Nome, Cidade, País, Latitude, Longitude, ICAO, Tipo
     if (n_fields < 8) {
-        r.motivo = strdup("Número incorreto de campos");
+        r.motivo = "Número incorreto de campos";
         return r;
     }
 
@@ -151,7 +183,7 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
 
     Aeroporto *a = malloc(sizeof(Aeroporto));
     if (!a) {
-        r.motivo = strdup("Falha de memória ao criar aeroporto");
+        r.motivo = "Falha de memória ao criar aeroporto";
         return r;
     }
 
@@ -171,11 +203,10 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
         free(a->iata); free(a->nome); free(a->cidade);
         free(a->pais); free(a->latitude); free(a->longitude);
         free(a->icao); free(a->tipo); free(a);
-        r.motivo = strdup("Erro de alocação de memória");
+        r.motivo = "Erro de alocação de memória";
         return r;
     }
 
-    // ======= Sucesso =======
     r.valido = true;
     r.entidade = a;
     return r;
