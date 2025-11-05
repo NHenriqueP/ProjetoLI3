@@ -41,9 +41,4 @@ int airport_ptr_manager_index_by_iata_ptr(AeroportoPtrManager *manager, const ch
 // Adapter compatible with generic csv_parser: takes (void*, const void*)
 int airport_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade);
 
-
-
-
-
-
 #endif 

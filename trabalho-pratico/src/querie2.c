@@ -1,7 +1,7 @@
 // Query 2: Top N aeronaves com mais voos realizados (exclui CANCELLED)
 // Opcional: filtro por fabricante
 // !!!!!!!!!!!!!!!!!!!AINDA ESTA A SER FEITO, IGNORAR POR ENQUANTO!!!!!!!!!!!!!!!!!!!!!!!!!
-
+/*
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -154,3 +154,4 @@ void querie2_top_n_aeronaves(const Aeronave *aeronaves, size_t na,
 	free(res);
 	free(table);
 }
+	*/
