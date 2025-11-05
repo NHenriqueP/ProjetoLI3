@@ -1,7 +1,14 @@
 # Compilador e flags
-CC = gcc
-CFLAGS = -Wall -Wextra -g -Iinclude
-LDFLAGS = 
+CC := gcc
+CFLAGS := -std=c11 -Wall -Wextra -Iinclude -g
+
+# Try to get flags from pkg-config; if not available, fall back to common glib include/lib flags.
+PKG_CFLAGS := $(shell { pkg-config --cflags glib-2.0 2>/dev/null || echo "-I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include"; })
+PKG_LIBS := $(shell { pkg-config --libs glib-2.0 2>/dev/null || echo "-lglib-2.0"; })
+LDFLAGS := $(PKG_LIBS)
+
+# Append pkg-config cflags to CFLAGS
+CFLAGS += $(PKG_CFLAGS)
 
 # Diretórios
 SRC_DIR = src
@@ -10,7 +17,7 @@ INC_DIR = include
 BIN_DIR = .
 
 # Nome do executável
-TARGET = $(BIN_DIR)/programa
+TARGET = $(BIN_DIR)/programa-principal
 
 # Ficheiros fonte
 SRCS = $(wildcard $(SRC_DIR)/*.c)

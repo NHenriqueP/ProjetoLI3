@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 #include <errno.h> /* Este ficheiro inclui <errno.h> para permitir que o código verifique e interprete códigos de erro produzidos por chamadas de biblioteca ou do sistema.*/ 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <glib.h>
 
 
 // Função que adiciona um elemento válido ao gestor
@@ -89,12 +91,13 @@ int csv_parser(
 
         // Guardar o cabeçalho (primeira linha) e continuar
         if (!header_lido) {
-            header = strdup(linha);
+            header = g_strdup(linha);
             header_lido = true;
             continue;
         }
 
         // Dividir linha em campos (suporta aspas e vírgulas dentro de aspas)
+        char *linha_original = g_strdup(linha); // preservar a linha inteira antes da tokenização in-place
         char *fields[15];
         int max_fields = 15;
         int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
@@ -110,107 +113,37 @@ int csv_parser(
                     fputs("Erro ao criar ficheiro de erros: ", stderr);
                     fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
                     fputc('\n', stderr);
+                    g_free(linha_original);
                     break;
                 }
             }
             // Escreve a linha inválida
-            fputs(linha, ficheiro_erros_ptr);
+            if (linha_original) {
+                fputs(linha_original, ficheiro_erros_ptr);
+            } else {
+                fputs(linha, ficheiro_erros_ptr);
+            }
             fputc('\n', ficheiro_erros_ptr);
         } else {
             // Adiciona entidade válida ao gestor
             add_func(gestor, resultado.entidade);
             contador_validos++;
         }
+
+        // libertar cópia da linha
+        g_free(linha_original);
     }
 
     // Fechar e libertar tudo
     if (ficheiro_erros_ptr) fclose(ficheiro_erros_ptr);
-    free(header);
+    g_free(header);
     free(linha);
     fclose(ficheiro);
 
     return contador_validos;
 }
 
-ParseResultado parse_airport_line(char **fields, int n_fields) {
-    ParseResultado r;
-    r.valido = false;
-    r.entidade = NULL;
-    r.motivo = NULL;
-
-    // Esperamos exatamente 8 campos 
-    // Exemplo: IATA, Nome, Cidade, País, Latitude, Longitude, ICAO, Tipo
-    if (n_fields < 8) {
-        r.motivo = "Número incorreto de campos";
-        return r;
-    }
-
-    // Extrair e limpar campos
-    char *iata      = (fields[0]);
-    char *nome      = (fields[1]);
-    char *cidade    = (fields[2]);
-    char *pais      = (fields[3]);
-    char *latitude  = (fields[4]);
-    char *longitude = (fields[5]);
-    char *icao      = (fields[6]);
-    char *tipo      = (fields[7]);
-
-    
-    if (!validar_iata(iata)) {
-        r.motivo = ("IATA inválido");
-        return r;
-    }
-
-    if (!validar_icao(icao)) {
-        r.motivo = ("ICAO inválido");
-        return r;
-    }
-
-    if (!validar_latitude(latitude) || !validar_longitude(longitude)) {
-        r.motivo = ("Latitude ou longitude inválida");
-        return r;
-    }
-
-    if (strlen(nome) == 0 || strlen(cidade) == 0 || strlen(pais) == 0) {
-        r.motivo = ("Campos de texto vazios");
-        return r;
-    }
-
-    if(tipo_aeroporto_valido(tipo)==0) {
-        r.motivo= ("tipo do aeroporto inválido");
-    }
-
-
-    Aeroporto *a = malloc(sizeof(Aeroporto));
-    if (!a) {
-        r.motivo = "Falha de memória ao criar aeroporto";
-        return r;
-    }
-
-    // Atribuir campos (usando strdup)
-    a->iata      = strdup(iata);
-    a->nome      = strdup(nome);
-    a->cidade    = strdup(cidade);
-    a->pais      = strdup(pais);
-    a->latitude  = strdup(latitude);
-    a->longitude = strdup(longitude);
-    a->icao      = strdup(icao);
-    a->tipo      = strdup(tipo);
-
-    // Verificação de alocação
-    if (!a->iata || !a->nome || !a->cidade || !a->pais || 
-        !a->latitude || !a->longitude || !a->icao || !a->tipo) {
-        free(a->iata); free(a->nome); free(a->cidade);
-        free(a->pais); free(a->latitude); free(a->longitude);
-        free(a->icao); free(a->tipo); free(a);
-        r.motivo = "Erro de alocação de memória";
-        return r;
-    }
-
-    r.valido = true;
-    r.entidade = a;
-    return r;
-}
+// parse_airport_line foi movido para aeroportos.c para evitar dependência de detalhes internos da struct Aeroporto
 
 // Verifica se a string está no formato correto de coordenada
 int verifica_coordenadas(const char *s, int digitos_max) {

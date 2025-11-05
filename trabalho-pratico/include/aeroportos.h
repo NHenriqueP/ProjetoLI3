@@ -2,30 +2,20 @@
 #define AEROPORTO
 
 #include <stddef.h> // size_t
+#include <glib.h>
 
 
-typedef struct aeroporto {
-    char *iata;
-    char *nome;
-    char *cidade;
-    char *pais;
-    char *latitude;
-    char *longitude;
-    char *icao;
-    char *tipo;
-} Aeroporto;
+
+typedef struct aeroporto Aeroporto; // apenas escrever o typefed struct neste ficheiro e o resto no .c
+
+
+// usar a estrutura garray
+
+typedef struct AeroportoManager AeroportoManager;
+
 
 typedef struct {
-    Aeroporto *airports;
-    int count;
-    int capacity;
-} AeroportoManager;
-
-// Manager that stores pointers to Aeroporto (takes ownership of pointers)
-typedef struct {
-    Aeroporto **airports;
-    int count;
-    int capacity;
+    GArray *airports; /* array of (Aeroporto*) */
 } AeroportoPtrManager;
 
 
