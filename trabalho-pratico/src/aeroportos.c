@@ -6,7 +6,7 @@
 #include <glib.h>
 
 // Variável global para o manager (inicializada como NULL)
-static AeroportoManager *mgr = NULL; // static faz com que seja so visivel neste ficheiro
+static AeroportoManager *mgr = NULL;
 
 typedef struct aeroporto {
     char *iata;
@@ -20,9 +20,9 @@ typedef struct aeroporto {
 } Aeroporto;
 
 typedef struct AeroportoManager{
-    Aeroporto *airports;
+    GHashTable *airports_by_iata;  // Hash table para busca por IATA
+    GArray *airports_list;          // Array para iteração
     int count;
-    int capacity;
 } AeroportoManager;
 
 // Cria um novo AeroportoManager
@@ -30,11 +30,15 @@ AeroportoManager* airport_manager_create() {
     AeroportoManager *manager = malloc(sizeof(AeroportoManager));
     if (!manager) return NULL;
     
-    manager->capacity = 10000; // capacidade inicial para suportar 10.000 aeroportos
     manager->count = 0;
-    manager->airports = malloc(sizeof(Aeroporto) * manager->capacity);
     
-    if (!manager->airports) {
+    // Cria hash tables com funções de hash e comparação de strings
+    manager->airports_by_iata = g_hash_table_new(g_str_hash, g_str_equal);
+    manager->airports_list = g_array_new(FALSE, FALSE, sizeof(Aeroporto*));
+    
+    if (!manager->airports_by_iata  || !manager->airports_list) {
+        if (manager->airports_by_iata) g_hash_table_destroy(manager->airports_by_iata);
+        if (manager->airports_list) g_array_free(manager->airports_list, TRUE);
         free(manager);
         return NULL;
     }
@@ -54,37 +58,50 @@ AeroportoManager* get_airport_manager() {
     return mgr;
 }
 
-// Expande a capacidade do array se necessário
-static int expand_capacity(AeroportoManager *manager) {
-    int new_capacity = manager->capacity * 2;
-    Aeroporto *new_airports = realloc(manager->airports, sizeof(Aeroporto) * new_capacity);
-    
-    if (!new_airports) return 0;
-    
-    manager->airports = new_airports;
-    manager->capacity = new_capacity;
-    return 1;
-}
-
 // Adiciona um aeroporto ao manager
 int airport_manager_add(AeroportoManager *manager, Aeroporto airport) {
     if (!manager) return 0;
     
-    // Verifica se precisa expandir
-    if (manager->count >= manager->capacity) {
-        if (!expand_capacity(manager)) return 0;
-    }
+    // Aloca memória para uma cópia do aeroporto
+    Aeroporto *new_airport = g_new(Aeroporto, 1);
+    if (!new_airport) return 0;
     
-    // Copia o aeroporto para o array
-    manager->airports[manager->count] = airport;
+    *new_airport = airport;
+    
+    // Adiciona às hash tables usando IATA como chave
+    g_hash_table_insert(manager->airports_by_iata, new_airport->iata, new_airport);
+    
+    // Adiciona ao array para iteração
+    g_array_append_val(manager->airports_list, new_airport);
+    
     manager->count++;
-    
     return 1;
 }
 
-// Forward declaration para uso em copy_airport
-static void free_airport(Aeroporto *airport);
+// Busca um aeroporto por IATA (O(1) em média)
+Aeroporto* airport_manager_find_by_iata(AeroportoManager *manager, const char *iata) {
+    if (!manager || !iata) return NULL;
+    return (Aeroporto*)g_hash_table_lookup(manager->airports_by_iata, iata);
+}
 
+// Verifica se um aeroporto existe por IATA
+int airport_exists_by_iata(AeroportoManager *manager, const char *iata) {
+    if (!manager || !iata) return 0;
+    return g_hash_table_contains(manager->airports_by_iata, iata);
+}
+
+
+// Obtém o número total de aeroportos
+int airport_manager_get_count(AeroportoManager *manager) {
+    if (!manager) return 0;
+    return manager->count;
+}
+
+// Obtém um aeroporto por índice (para iteração)
+Aeroporto* airport_manager_get_at_index(AeroportoManager *manager, int index) {
+    if (!manager || index < 0 || index >= manager->count) return NULL;
+    return g_array_index(manager->airports_list, Aeroporto*, index);
+}
 
 // Liberta a memória de um aeroporto
 static void free_airport(Aeroporto *airport) {
@@ -104,12 +121,19 @@ static void free_airport(Aeroporto *airport) {
 void airport_manager_destroy(AeroportoManager *manager) {
     if (!manager) return;
     
-    // Liberta cada aeroporto
-    for (int i = 0; i < manager->count; i++) {
-        free_airport(&manager->airports[i]);
+    // Liberta cada aeroporto do array
+    for (guint i = 0; i < manager->airports_list->len; i++) {
+        Aeroporto *a = g_array_index(manager->airports_list, Aeroporto*, i);
+        if (a) {
+            free_airport(a);
+            g_free(a);
+        }
     }
     
-    free(manager->airports);
+    // Liberta as hash tables (não precisa liberar os valores, já foram liberados acima)
+    g_hash_table_destroy(manager->airports_by_iata);
+    g_array_free(manager->airports_list, TRUE);
+    
     free(manager);
 }
 
@@ -157,7 +181,6 @@ int airport_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade)
     if (!gestor || !entidade) return 0;
     return airport_ptr_manager_add_from_ptr((AeroportoPtrManager*)gestor, (Aeroporto*)entidade);
 }
-
 
 /* ---------------- CSV airport line parser (moved from csv_parser.c) -------- */
 ParseResultado parse_airport_line(char **fields, int n_fields) {
@@ -234,7 +257,3 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
     r.entidade = a;
     return r;
 }
-
-
-
-
