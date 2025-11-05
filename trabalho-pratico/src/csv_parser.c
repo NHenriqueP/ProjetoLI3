@@ -15,7 +15,6 @@
 // Função que adiciona um elemento válido ao gestor
 typedef int (*GestorAddFunc)(void *gestor, const void *entidade);
 
-// Helper: CSV split with double-quote support (RFC4180-ish)
 static int csv_split_quoted(
     char *s,//linha que se transforma em tokens
     char sep,// o separador entre os tokens é a ','

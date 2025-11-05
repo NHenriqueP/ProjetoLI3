@@ -1,6 +1,9 @@
 #include "querie1.h"
 #include <string.h>
-#include "airportos.h"
+#include <ctype.h>
+#include <stdio.h>
+#include "aeroportos.h"
+#include "gestorglobal.h"
 
 void execQ1(char linha[], int N, SistemaGestor *gestor, int *Nout) {
     char codigo_iata[5];
@@ -45,11 +48,16 @@ void execQ1(char linha[], int N, SistemaGestor *gestor, int *Nout) {
                 return; 
             }
 
-            Aeroporto *aeroporto_ptr = airport_manager_find_by_iata(gestor->aeroportos, codigo_iata);
+            Aeroporto *aeroporto_ptr = airport_ptr_manager_find_by_iata(
+                gestor_global_get_aeroportos(gestor),
+                codigo_iata
+            );
             if (aeroporto_ptr != NULL) {
-                fprintf(output_file, "%s,%s,%s,%s,%s", aeroporto_ptr->iata, aeroporto_ptr->nome, aeroporto_ptr->cidade, aeroporto_ptr->pais, aeroporto_ptr->tipo);
-            }
-            else {
+                char buf[512];
+                if (airport_summary(aeroporto_ptr, buf, sizeof(buf)) > 0) {
+                    fprintf(output_file, "%s\n", buf);
+                }
+            } else {
                 fprintf(output_file,"\n");
             }
             fclose(output_file);

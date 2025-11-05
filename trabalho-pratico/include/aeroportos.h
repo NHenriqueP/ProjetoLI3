@@ -5,17 +5,10 @@
 #include <glib.h>
 
 typedef struct aeroporto Aeroporto; // apenas escrever o typefed struct neste ficheiro e o resto no .c
-
-
-// usar a estrutura garray
-
 typedef struct AeroportoManager AeroportoManager;
-
-
 typedef struct {
     GArray *airports; /* array of (Aeroporto*) */
 } AeroportoPtrManager;
-
 
 // Criação e destruição do gestor
 AeroportoManager* airport_manager_create();

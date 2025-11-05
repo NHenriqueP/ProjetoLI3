@@ -1,19 +1,10 @@
 #ifndef AERONAVE
 #define AERONAVE
 
-typedef struct 
-{
-    AeroportoPtrManager *aeroportos;
-    // aeronaves;
-    //passageiros;
-    //reservas;
-    //voos;
-} SistemaGestor;
-
 typedef struct aeronave {
-    char id[9];
-    char fabricante[15];
-    char modelo[15];
+    char *id;
+    char *fabricante;
+    char *modelo;
     int anofabricacao;
     int capacidade;
     int alcance;

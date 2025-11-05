@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <glib.h>
 
 // Variável global para o manager (inicializada como NULL)
 static AeroportoManager *mgr = NULL;
@@ -182,7 +181,30 @@ int airport_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade)
     return airport_ptr_manager_add_from_ptr((AeroportoPtrManager*)gestor, (Aeroporto*)entidade);
 }
 
-/* ---------------- CSV airport line parser (moved from csv_parser.c) -------- */
+Aeroporto* airport_ptr_manager_find_by_iata(AeroportoPtrManager *manager, const char *iata) {
+    if (!manager || !manager->airports || !iata) return NULL;
+    for (guint i = 0; i < manager->airports->len; i++) {
+        Aeroporto *a = g_array_index(manager->airports, Aeroporto*, i);
+        if (a && a->iata && strcmp(a->iata, iata) == 0) return a;
+    }
+    return NULL;
+}
+
+// Produz um resumo CSV do aeroporto (IATA,Nome,Cidade,País,Tipo)
+int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize) {
+    if (!airport || !buf || bufsize == 0) return 0;
+    int n = snprintf(buf, bufsize, "%s,%s,%s,%s,%s",
+                     airport->iata ? airport->iata : "",
+                     airport->nome ? airport->nome : "",
+                     airport->cidade ? airport->cidade : "",
+                     airport->pais ? airport->pais : "",
+                     airport->tipo ? airport->tipo : "");
+    if (n < 0) return 0;
+    if ((size_t)n >= bufsize) return 0; // truncado
+    return n;
+}
+
+/* ---------------- CSV airport line parser (movido do csv_parser.c) -------- */
 ParseResultado parse_airport_line(char **fields, int n_fields) {
     ParseResultado r;
     r.valido = false;

@@ -1,1 +1,158 @@
-#include <voos.h>
+#include "voos.h"
+#include "csv_parser.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+static void free_voo(Voo *v) {
+	if (!v) return;
+	if (v->tracking_url) g_free(v->tracking_url);
+	g_free(v);
+}
+
+VooPtrManager* voo_ptr_manager_create() {
+	VooPtrManager *m = malloc(sizeof(VooPtrManager));
+	if (!m) return NULL;
+	m->flights = g_array_new(FALSE, FALSE, sizeof(Voo*));
+	if (!m->flights) { free(m); return NULL; }
+	return m;
+}
+
+void voo_ptr_manager_destroy(VooPtrManager *manager) {
+	if (!manager) return;
+	if (manager->flights) {
+		for (guint i = 0; i < manager->flights->len; i++) {
+			Voo *v = g_array_index(manager->flights, Voo*, i);
+			if (v) free_voo(v);
+		}
+		g_array_free(manager->flights, TRUE);
+	}
+	free(manager);
+}
+
+int voo_ptr_manager_add_from_ptr(VooPtrManager *manager, Voo *entidade) {
+	if (!manager || !entidade) return 0;
+	g_array_append_val(manager->flights, entidade);
+	return 1;
+}
+
+int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
+	if (!gestor || !entidade) return 0;
+	return voo_ptr_manager_add_from_ptr((VooPtrManager*)gestor, (Voo*)entidade);
+}
+
+Voo* voo_ptr_manager_find_by_id(VooPtrManager *manager, const char *id) {
+	if (!manager || !manager->flights || !id) return NULL;
+	for (guint i = 0; i < manager->flights->len; i++) {
+		Voo *v = g_array_index(manager->flights, Voo*, i);
+		if (v && strncmp(v->idvoo, id, sizeof(v->idvoo)) == 0) return v;
+	}
+	return NULL;
+}
+
+int voo_summary(const Voo *v, char *buf, size_t bufsize) {
+	if (!v || !buf || bufsize == 0) return 0;
+	int n = snprintf(buf, bufsize, "%s,%04d-%02d-%02d %02d:%02d,%04d-%02d-%02d %02d:%02d,%s,%s,%s,%s",
+					 v->idvoo,
+					 v->departure.data.year, v->departure.data.month, v->departure.data.day,
+					 v->departure.hora.hora, v->departure.hora.minuto,
+					 v->arrival.data.year, v->arrival.data.month, v->arrival.data.day,
+					 v->arrival.hora.hora, v->arrival.hora.minuto,
+					 v->iataorigem, v->iatadestino, v->aircraft, v->airline);
+	if (n < 0) return 0;
+	if ((size_t)n >= bufsize) return 0;
+	return n;
+}
+
+static int parse_horario(const char *s, Horario *h) {
+    if (!s || !h) return 0;
+    int Y,M,D,hh,mm;
+    if (sscanf(s, "%d-%d-%d %d:%d", &Y, &M, &D, &hh, &mm) != 5) return 0;
+    if (Y < 1900 || M < 1 || M > 12 || D < 1 || D > 31 || hh < 0 || hh > 23 || mm < 0 || mm > 59) return 0;
+    h->data.year = Y; h->data.month = M; h->data.day = D;
+    h->hora.hora = hh; h->hora.minuto = mm;
+    return 1;
+}
+
+static Status parse_status(const char *s, int *ok) {
+    *ok = 1;
+    if (!s) { *ok = 0; return ON_TIME; }
+    if (g_ascii_strcasecmp(s, "ON_TIME") == 0 || g_ascii_strcasecmp(s, "ON TIME") == 0 || g_ascii_strcasecmp(s, "On time") == 0) return ON_TIME;
+    if (g_ascii_strcasecmp(s, "DELAYED") == 0 || g_ascii_strcasecmp(s, "Delayed") == 0) return DELAYED;
+    if (g_ascii_strcasecmp(s, "CANCELLED") == 0 || g_ascii_strcasecmp(s, "Cancelled") == 0) return CANCELLED;
+    *ok = 0; return ON_TIME;
+}
+
+static int validar_flight_id(const char *s) {
+	if (!s) return 0;
+	size_t len = strlen(s);
+	if (len == 0 || len >= sizeof(((Voo*)0)->idvoo)) return 0; // 1..7
+	for (size_t i = 0; i < len; i++) {
+		unsigned char c = (unsigned char)s[i];
+		if (!(g_ascii_isalnum(c))) return 0;
+	}
+	return 1;
+}
+
+static int validar_url_http(const char *s) {
+	if (!s) return 0;
+	return g_str_has_prefix(s, "http://") || g_str_has_prefix(s, "https://");
+}
+
+ParseResultado parse_voo_line(char **fields, int n_fields) {
+	ParseResultado r; r.valido = false; r.entidade = NULL; r.motivo = NULL;
+	if (n_fields < 12) { r.motivo = "Número incorreto de campos"; return r; }
+
+	const char *flight_id   = fields[0];
+	const char *dep_str     = fields[1];
+	const char *act_dep_str = fields[2];
+	const char *arr_str     = fields[3];
+	const char *act_arr_str = fields[4];
+	const char *gate_str    = fields[5];
+	const char *status_str  = fields[6];
+	const char *origem      = fields[7];
+	const char *destino     = fields[8];
+	const char *aircraft    = fields[9];
+	const char *airline     = fields[10];
+	const char *url         = fields[11];
+
+	if (!validar_flight_id(flight_id)) { r.motivo = "flight id inválido"; return r; }
+	if (!validar_iata(origem) || !validar_iata(destino)) { r.motivo = "IATA origem/destino inválido"; return r; }
+	if (!aircraft || strlen(aircraft) >= sizeof(((Voo*)0)->aircraft)) { r.motivo = "aircraft demasiado longo"; return r; }
+	if (!airline || strlen(airline) >= sizeof(((Voo*)0)->airline)) { r.motivo = "airline demasiado longo"; return r; }
+
+	char *endp = NULL; long gate = strtol(gate_str ? gate_str : "", &endp, 10);
+	if (!gate_str || endp == gate_str || gate <= 0) { r.motivo = "gate inválido"; return r; }
+
+	Horario dep = {0}, act_dep = (Horario){0}, arr = {0}, act_arr = (Horario){0};
+	if (!parse_horario(dep_str, &dep)) { r.motivo = "departure inválido"; return r; }
+	if (!parse_horario(arr_str, &arr)) { r.motivo = "arrival inválido"; return r; }
+	// actuals: obrigatórios e válidos
+	if (!parse_horario(act_dep_str, &act_dep)) { r.motivo = "actual departure inválido"; return r; }
+	if (!parse_horario(act_arr_str, &act_arr)) { r.motivo = "actual arrival inválido"; return r; }
+
+	int ok_status = 0; Status st = parse_status(status_str, &ok_status);
+	if (!ok_status) { r.motivo = "status inválido"; return r; }
+
+	Voo *v = g_new0(Voo, 1);
+	if (!v) { r.motivo = "Falha de memória"; return r; }
+
+	// Copiar para buffers fixos garantindo terminação
+	g_strlcpy(v->idvoo, flight_id, sizeof(v->idvoo));
+	v->departure = dep;
+	v->actualdeparture = act_dep;
+	v->arrival = arr;
+	v->actualarrival = act_arr;
+	v->gate = (int)gate;
+	v->estado = st;
+	g_strlcpy(v->iataorigem, origem, sizeof(v->iataorigem));
+	g_strlcpy(v->iatadestino, destino, sizeof(v->iatadestino));
+	g_strlcpy(v->aircraft, aircraft, sizeof(v->aircraft));
+	g_strlcpy(v->airline, airline, sizeof(v->airline));
+	if (!validar_url_http(url)) { r.motivo = "tracking url inválida"; g_free(v); return r; }
+	v->tracking_url = g_strdup(url);
+
+	r.valido = true;
+	r.entidade = v;
+	return r;
+}

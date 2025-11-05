@@ -44,6 +44,12 @@ $(OBJ_DIR):
 clean:
 	rm -rf $(OBJ_DIR) $(TARGET)
 
+# Limpar apenas os ficheiros gerados na pasta de resultados
+clean_outputs:
+	@echo "A limpar ficheiros na pasta resultados/ (mantendo .gitkeep)"
+	@mkdir -p resultados
+	@find resultados -type f ! -name '.gitkeep' -delete
+
 # Limpar e recompilar
 rebuild: clean all
 
@@ -52,4 +58,4 @@ run: $(TARGET)
 	./$(TARGET)
 
 # Regras que não são ficheiros
-.PHONY: all clean rebuild run
+.PHONY: all clean clean_outputs rebuild run

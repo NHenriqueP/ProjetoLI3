@@ -53,25 +53,39 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     int count_airports = csv_parser(
         caminho_completo,
         caminho_erros,
-        gestor->aeroportos,
+        gestor_global_get_aeroportos(gestor),
         parse_airport_line,
         airport_ptr_manager_add_from_ptr_adapter,
         ','
     );
-
     if (count_airports < 0) return 0;
-    
-        // Informação para o utilizador (sem alterar validações)
-        printf("Aeroportos carregados: %d\n", count_airports);
+        //printf("Aeroportos carregados: %d\n", count_airports);//colocar em comentário para não dar print no terminal
+    // Carregar voos (opcional por agora – parser ainda é um stub)
+    if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "flights.csv")) return 0;
+    const char *erros_voos_rel = "resultados/erros_flights.csv";
+    l = strlen(erros_voos_rel);
+    if (l >= sizeof(caminho_erros)) return 0;
+    for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_voos_rel[i];
+    caminho_erros[l] = '\0';
+
+    int count_voos = csv_parser(
+        caminho_completo,
+        caminho_erros,
+        gestor_global_get_voos(gestor),
+        parse_voo_line,
+        voo_ptr_manager_add_from_ptr_adapter,
+        ','
+    );
+    if (count_voos < 0) return 0;
 
     return 1;
 }
 
 int executar_querry(char linha[],int N,SistemaGestor *gestor,int *Nout) {
-    Aeroporto *aeroporto = NULL;
     if (linha[0] == '1') {
         execQ1(linha,N,gestor,Nout);
     }
+    return 1;
 }
 
 int ler_inputs(const char *caminho_inputs,SistemaGestor *gestor,int *nOut) {
@@ -94,7 +108,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    int nOut = 0;
+    int nOut = 1; // ficheiros devem começar em command1_output.txt
     SistemaGestor *gestorGlob = criar_gestor_global();
 
     const char *caminho_csv_pasta = argv[1]; // Caminho para a pasta
