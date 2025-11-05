@@ -85,19 +85,23 @@ int csv_parser(
     int contador_validos = 0;
 
     while ((lida = getline(&linha, &tam, ficheiro)) != -1) {
-        // Remover \n e \r
-        while (lida > 0 && (linha[lida - 1] == '\n' || linha[lida - 1] == '\r'))// \r serve para garantir compatibilidade com windows
+        // Preservar a linha original (incluindo terminadores de linha) para o ficheiro de erros
+        char *linha_original = g_strndup(linha, (size_t)lida);
+
+        // Remover \n e \r para efeitos de parsing
+        while (lida > 0 && (linha[lida - 1] == '\n' || linha[lida - 1] == '\r')) // \r serve para compatibilidade com Windows
             linha[--lida] = '\0';
 
         // Guardar o cabeçalho (primeira linha) e continuar
         if (!header_lido) {
             header = g_strdup(linha);
             header_lido = true;
+            // já não precisamos da cópia da linha original nesta iteração
+            g_free(linha_original);
             continue;
         }
 
         // Dividir linha em campos (suporta aspas e vírgulas dentro de aspas)
-        char *linha_original = g_strdup(linha); // preservar a linha inteira antes da tokenização in-place
         char *fields[15];
         int max_fields = 15;
         int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
@@ -117,13 +121,14 @@ int csv_parser(
                     break;
                 }
             }
-            // Escreve a linha inválida
+            // Escreve a linha inválida exatamente como lida (com terminadores originais)
             if (linha_original) {
-                fputs(linha_original, ficheiro_erros_ptr);
+                fwrite(linha_original, 1, (size_t) (lida + ((linha[lida] == '\0') ? 0 : 0)), ficheiro_erros_ptr);
             } else {
+                // fallback: escreve versão já normalizada
                 fputs(linha, ficheiro_erros_ptr);
+                fputc('\n', ficheiro_erros_ptr);
             }
-            fputc('\n', ficheiro_erros_ptr);
         } else {
             // Adiciona entidade válida ao gestor
             add_func(gestor, resultado.entidade);
