@@ -4,8 +4,6 @@
 #include <stddef.h> // size_t
 #include <glib.h>
 
-
-
 typedef struct aeroporto Aeroporto; // apenas escrever o typefed struct neste ficheiro e o resto no .c
 
 
