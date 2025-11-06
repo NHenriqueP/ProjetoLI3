@@ -9,6 +9,7 @@
 #include <string.h>
 #include "querie1.h"
 #include "gestorglobal.h"
+#include "querie2.h"
 
 
 static int path_join2(char *dst, size_t dstsz, const char *dir, const char *file) {
@@ -60,7 +61,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     );
     if (count_airports < 0) return 0;
        //printf("Aeroportos carregados: %d\n", count_airports);//colocar em comentário para não dar print no terminal
-    // Carregar voos (opcional por agora – parser ainda é um stub)
+    // Carregar voos
     if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "flights.csv")) return 0;
     const char *erros_voos_rel = "resultados/erros_flights.csv";
     l = strlen(erros_voos_rel);
@@ -78,12 +79,32 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     );
     if (count_voos < 0) return 0;
 
+    // Carregar aeronaves
+    if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "aircrafts.csv")) return 0;
+    const char *erros_aeronaves_rel = "resultados/erros_aircrafts.csv";
+    l = strlen(erros_aeronaves_rel);
+    if (l >= sizeof(caminho_erros)) return 0;
+    for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_aeronaves_rel[i];
+    caminho_erros[l] = '\0';
+
+    int count_aeronaves = csv_parser(
+        caminho_completo,
+        caminho_erros,
+        gestor_global_get_aeronaves(gestor),
+        parse_aeronave_line,
+        aeronave_ptr_manager_add_from_ptr_adapter,
+        ','
+    );
+    if (count_aeronaves < 0) return 0;
+
     return 1;
 }
 
 int executar_querry(char linha[],SistemaGestor *gestor,int *Nout) {
     if (linha[0] == '1') {
         execQ1(linha,gestor,Nout);
+    } else if (linha[0] == '2') {
+        execQ2(linha,gestor,Nout);
     }
     return 1;
 }
