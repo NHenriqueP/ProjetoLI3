@@ -59,7 +59,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
         ','
     );
     if (count_airports < 0) return 0;
-        //printf("Aeroportos carregados: %d\n", count_airports);//colocar em comentário para não dar print no terminal
+       //printf("Aeroportos carregados: %d\n", count_airports);//colocar em comentário para não dar print no terminal
     // Carregar voos (opcional por agora – parser ainda é um stub)
     if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "flights.csv")) return 0;
     const char *erros_voos_rel = "resultados/erros_flights.csv";
@@ -81,9 +81,9 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     return 1;
 }
 
-int executar_querry(char linha[],int N,SistemaGestor *gestor,int *Nout) {
+int executar_querry(char linha[],SistemaGestor *gestor,int *Nout) {
     if (linha[0] == '1') {
-        execQ1(linha,N,gestor,Nout);
+        execQ1(linha,gestor,Nout);
     }
     return 1;
 }
@@ -95,7 +95,7 @@ int ler_inputs(const char *caminho_inputs,SistemaGestor *gestor,int *nOut) {
     char linha[tamanho_linha]; 
 
     while(fgets(linha,sizeof(linha),inputs)) {
-        executar_querry(linha,tamanho_linha,gestor,nOut);
+        executar_querry(linha,gestor,nOut);
     }
 
     fclose(inputs);
@@ -119,7 +119,9 @@ int main(int argc, char *argv[]) {
         return 1;
     };
 
-    if (ler_inputs(caminho_inputs,gestorGlob,&nOut) == 0) {
+    if (!ler_inputs(caminho_inputs,gestorGlob,&nOut)) {
+        destruir_gestor_global(gestorGlob);
+        return 1;
     }
 
 

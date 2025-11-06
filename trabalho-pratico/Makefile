@@ -46,15 +46,13 @@ clean:
 
 # Limpar apenas os ficheiros gerados na pasta de resultados
 clean_outputs:
-	@echo "A limpar ficheiros na pasta resultados/ (mantendo .gitkeep)"
-	@mkdir -p resultados
-	@find resultados -type f ! -name '.gitkeep' -delete
+	rm -rf resultados/*.txt
 
 # Limpar e recompilar
 rebuild: clean all
 
 # Executar o programa
-run: $(TARGET)
+run: clean_outputs $(TARGET)
 	./$(TARGET)
 
 # Regras que não são ficheiros

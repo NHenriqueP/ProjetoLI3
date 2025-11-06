@@ -1,4 +1,4 @@
 #include "gestorglobal.h"
 #include "aeroportos.h"
 
-void execQ1(char linha[], int N, SistemaGestor *gestor,int *Nout);
+void execQ1(char linha[] ,SistemaGestor *gestor,int *Nout);

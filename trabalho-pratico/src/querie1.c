@@ -5,7 +5,7 @@
 #include "aeroportos.h"
 #include "gestorglobal.h"
 
-void execQ1(char linha[], int N, SistemaGestor *gestor, int *Nout) {
+void execQ1(char linha[],SistemaGestor *gestor, int *Nout) {
     char codigo_iata[5];
 
     if (linha[0] != '1' || linha[1] == '\0') {
