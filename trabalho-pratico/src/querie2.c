@@ -17,9 +17,10 @@ typedef struct {
     int total_voos;
 } Q2Item;
 
+// qsort comparator over an array of pointers (arr->pdata): a and b are Q2Item* pointers' addresses
 static int cmp_q2(const void *a, const void *b) {
-    const Q2Item *x = (const Q2Item*)a;
-    const Q2Item *y = (const Q2Item*)b;
+    const Q2Item *x = *(const Q2Item* const*)a;
+    const Q2Item *y = *(const Q2Item* const*)b;
     if (x->total_voos != y->total_voos) return (y->total_voos - x->total_voos);
     return strcmp(x->id, y->id);
 }
@@ -85,7 +86,7 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
         g_ptr_array_add(arr, value);
     }
 
-    qsort(arr->pdata, arr->len, sizeof(gpointer), (int(*)(const void*, const void*))cmp_q2);
+    qsort(arr->pdata, arr->len, sizeof(gpointer), cmp_q2);
 
     char caminho_output[256];
     snprintf(caminho_output, sizeof(caminho_output), "resultados/command%d_output.txt", *Nout);

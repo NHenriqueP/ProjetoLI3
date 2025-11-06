@@ -44,7 +44,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
 
     // ficheiro de erros na pasta de resultados
     
-        const char *erros_rel = "resultados/erros_airports.csv";
+        const char *erros_rel = "resultados/airports_errors.csv";
         size_t l = strlen(erros_rel);
         if (l >= sizeof(caminho_erros)) return 0;
         for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_rel[i];
@@ -63,7 +63,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
        //printf("Aeroportos carregados: %d\n", count_airports);//colocar em comentário para não dar print no terminal
     // Carregar voos
     if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "flights.csv")) return 0;
-    const char *erros_voos_rel = "resultados/erros_flights.csv";
+    const char *erros_voos_rel = "resultados/flights_errors.csv";
     l = strlen(erros_voos_rel);
     if (l >= sizeof(caminho_erros)) return 0;
     for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_voos_rel[i];
@@ -81,7 +81,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
 
     // Carregar aeronaves
     if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "aircrafts.csv")) return 0;
-    const char *erros_aeronaves_rel = "resultados/erros_aircrafts.csv";
+    const char *erros_aeronaves_rel = "resultados/aircrafts_errors.csv";
     l = strlen(erros_aeronaves_rel);
     if (l >= sizeof(caminho_erros)) return 0;
     for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_aeronaves_rel[i];
