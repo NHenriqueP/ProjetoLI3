@@ -10,6 +10,7 @@
 #include "querie1.h"
 #include "gestorglobal.h"
 #include "querie2.h"
+#include "querie3.h"
 
 
 static int path_join2(char *dst, size_t dstsz, const char *dir, const char *file) {
@@ -105,7 +106,10 @@ int executar_querry(char linha[],SistemaGestor *gestor,int *Nout) {
         execQ1(linha,gestor,Nout);
     } else if (linha[0] == '2') {
         execQ2(linha,gestor,Nout);
+    } else if (linha[0]=='3') {
+        execQ3(linha,gestor,Nout);
     }
+
     return 1;
 }
 

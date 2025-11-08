@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <limits.h>
 #include <glib.h>
 
 #include "querie2.h"
@@ -11,98 +13,137 @@
 #include "gestorglobal.h"
 
 typedef struct {
-    char id[16];
-    char fabricante[32];
-    char modelo[32];
-    int total_voos;
-} Q2Item;
+    Aeronave *aeronave;
+    int count;
+} AircraftCount;
 
-// qsort comparator over an array of pointers (arr->pdata): a and b are Q2Item* pointers' addresses
-static int cmp_q2(const void *a, const void *b) {
-    const Q2Item *x = *(const Q2Item* const*)a;
-    const Q2Item *y = *(const Q2Item* const*)b;
-    if (x->total_voos != y->total_voos) return (y->total_voos - x->total_voos);
-    return strcmp(x->id, y->id);
+static gint compare_aircraft_counts(gconstpointer a, gconstpointer b) {
+    const AircraftCount *lhs = a;
+    const AircraftCount *rhs = b;
+    if (!lhs || !rhs) return 0;
+    if (lhs->count > rhs->count) return -1;
+    if (lhs->count < rhs->count) return 1;
+    const char *id_lhs = aeronave_get_id(lhs->aeronave);
+    const char *id_rhs = aeronave_get_id(rhs->aeronave);
+    if (!id_lhs) id_lhs = "";
+    if (!id_rhs) id_rhs = "";
+    return strcmp(id_lhs, id_rhs);
+}
+
+static int escrever_resultados(const GPtrArray *ordenado, int limite, const char *caminho_output) {
+    FILE *output = fopen(caminho_output, "w");
+    if (!output) return 0;
+    if (!ordenado || limite <= 0 || ordenado->len == 0) {
+        fputc('\n', output);
+        fclose(output);
+        return 1;
+    }
+
+    int max = limite;
+    if (max > (int)ordenado->len) max = (int)ordenado->len;
+    for (int i = 0; i < max; i++) {
+        const AircraftCount *entry = g_ptr_array_index((GPtrArray*)ordenado, i);
+        if (!entry || !entry->aeronave) continue;
+        const char *id = aeronave_get_id(entry->aeronave);
+        const char *fabricante = aeronave_get_fabricante(entry->aeronave);
+        const char *modelo = aeronave_get_modelo(entry->aeronave);
+        if (!id) id = "";
+        if (!fabricante) fabricante = "";
+        if (!modelo) modelo = "";
+        fprintf(output, "%s,%s,%s,%d\n", id, fabricante, modelo, entry->count);
+    }
+    fclose(output);
+    return 1;
+}
+
+static char *trim_leading_ws(char *s) {
+    if (!s) return NULL;
+    while (*s && isspace((unsigned char)*s)) s++;
+    return s;
+}
+
+static void trim_trailing_ws(char *s) {
+    if (!s) return;
+    size_t len = strlen(s);
+    while (len > 0 && isspace((unsigned char)s[len - 1])) {
+        s[len - 1] = '\0';
+        len--;
+    }
 }
 
 void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
     if (!linha || !gestor || !Nout) return;
     if (linha[0] != '2') return;
 
-    // Parse: "2 <N> [<fabricante>]"
-    char *p = &linha[1];
-    while (*p == ' ') p++;
-    if (!*p) return;
+    char *cursor = trim_leading_ws(linha + 1);
+    if (!cursor || *cursor == '\0') return;
+
     char *endptr = NULL;
-    long topN = strtol(p, &endptr, 10);
-    if (p == endptr || topN <= 0) return;
-    p = endptr;
-    while (*p == ' ') p++;
-    char fabricante_filter[64];
-    fabricante_filter[0] = '\0';
-    if (*p) {
-        // Lê até ao fim da palavra
-        size_t len = 0;
-        while (p[len] && p[len] != '\n' && p[len] != '\r' && p[len] != ' ' && len + 1 < sizeof(fabricante_filter)) len++;
-        memcpy(fabricante_filter, p, len);
-        fabricante_filter[len] = '\0';
+    long parsed = strtol(cursor, &endptr, 10);
+    if (endptr == cursor || parsed <= 0) parsed = 0;
+    if (parsed > INT_MAX) parsed = INT_MAX;
+
+    cursor = trim_leading_ws(endptr);
+    char *manufacturer = NULL;
+    if (cursor && *cursor) {
+        manufacturer = cursor;
+        trim_trailing_ws(manufacturer);
+        if (*manufacturer == '\0') manufacturer = NULL;
     }
 
-    AeronavePtrManager *am = gestor_global_get_aeronaves(gestor);
-    VooPtrManager *vm = gestor_global_get_voos(gestor);
-    if (!am || !vm) return;
-
-    // Construir mapa id->info
-    GHashTable *map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-    for (guint i = 0; i < am->aeronaves->len; i++) {
-        Aeronave *a = g_array_index(am->aeronaves, Aeronave*, i);
-        if (!a) continue;
-        const char *fab = aeronave_get_fabricante(a);
-        if (fabricante_filter[0] != '\0' && (!fab || strcmp(fab, fabricante_filter) != 0)) continue;
-        const char *aid = aeronave_get_id(a);
-        if (!aid) continue;
-        Q2Item *item = g_new0(Q2Item, 1);
-        g_strlcpy(item->id, aid, sizeof(item->id));
-        g_strlcpy(item->fabricante, fab ? fab : "", sizeof(item->fabricante));
-        g_strlcpy(item->modelo, aeronave_get_modelo(a) ? aeronave_get_modelo(a) : "", sizeof(item->modelo));
-        item->total_voos = 0;
-        g_hash_table_insert(map, g_strdup(item->id), item);
-    }
-
-    // Contabilizar voos (exclui CANCELLED)
-    for (guint j = 0; j < vm->flights->len; j++) {
-        Voo *v = g_array_index(vm->flights, Voo*, j);
-        if (!v) continue;
-        if (v->estado == CANCELLED) continue;
-        Q2Item *item = (Q2Item*)g_hash_table_lookup(map, v->aircraft);
-        if (item) item->total_voos++;
-    }
-
-    // Extrair, ordenar e emitir top N
-    GPtrArray *arr = g_ptr_array_new();
-    GHashTableIter it; gpointer key, value;
-    g_hash_table_iter_init(&it, map);
-    while (g_hash_table_iter_next(&it, &key, &value)) {
-        g_ptr_array_add(arr, value);
-    }
-
-    qsort(arr->pdata, arr->len, sizeof(gpointer), cmp_q2);
+    VooPtrManager *voos_manager = gestor_global_get_voos(gestor);
+    AeronavePtrManager *aeronaves_manager = gestor_global_get_aeronaves(gestor);
 
     char caminho_output[256];
     snprintf(caminho_output, sizeof(caminho_output), "resultados/command%d_output.txt", *Nout);
-    FILE *out = fopen(caminho_output, "w");
-    if (!out) { g_ptr_array_free(arr, TRUE); g_hash_table_destroy(map); return; }
 
-    guint emit = (guint)topN;
-    if (emit > arr->len) emit = arr->len;
-    for (guint i = 0; i < emit; i++) {
-        Q2Item *it2 = (Q2Item*)arr->pdata[i];
-        fprintf(out, "%s,%s,%s,%d\n", it2->id, it2->fabricante, it2->modelo, it2->total_voos);
+    if (!voos_manager || !aeronaves_manager || !voos_manager->flights || !aeronaves_manager->aeronaves) {
+        if (escrever_resultados(NULL, 0, caminho_output)) (*Nout)++;
+        return;
     }
-    fclose(out);
-    (*Nout)++;
 
-    // Limpeza (keys são freed automaticamente pelo free function da hash)
-    g_ptr_array_free(arr, TRUE);
-    g_hash_table_destroy(map);
+    GHashTable *contagens = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
+
+    for (guint i = 0; i < aeronaves_manager->aeronaves->len; i++) {
+        Aeronave *a = g_array_index(aeronaves_manager->aeronaves, Aeronave*, i);
+        if (!a) continue;
+        const char *id = aeronave_get_id(a);
+        if (!id || *id == '\0') continue;
+        if (manufacturer) {
+            const char *fab = aeronave_get_fabricante(a);
+            if (!fab || g_ascii_strcasecmp(fab, manufacturer) != 0) continue;
+        }
+        AircraftCount *entry = g_new0(AircraftCount, 1);
+        entry->aeronave = a;
+        g_hash_table_insert(contagens, (gpointer)id, entry);
+    }
+
+    for (guint i = 0; i < voos_manager->flights->len; i++) {
+        Voo *voo = g_array_index(voos_manager->flights, Voo*, i);
+        if (!voo) continue;
+        if (voo->estado == CANCELLED) continue;
+        if (voo->aircraft[0] == '\0') continue;
+
+        AircraftCount *entry = g_hash_table_lookup(contagens, voo->aircraft);
+        if (!entry) continue;
+        entry->count++;
+    }
+
+    GPtrArray *ordenado = g_ptr_array_new();
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init(&iter, contagens);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        AircraftCount *entry = value;
+        if (entry && entry->count > 0) g_ptr_array_add(ordenado, entry);
+    }
+
+    g_ptr_array_sort(ordenado, compare_aircraft_counts);
+
+    int wrote = escrever_resultados(ordenado, (int)parsed, caminho_output);
+
+    g_ptr_array_free(ordenado, TRUE);
+    g_hash_table_destroy(contagens);
+
+    if (wrote) (*Nout)++;
 }
