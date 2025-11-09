@@ -17,12 +17,12 @@ typedef struct {
     int count;
 } AircraftCount;
 
-static gint compare_aircraft_counts(gconstpointer a, gconstpointer b) {
-    const AircraftCount *lhs = a;
-    const AircraftCount *rhs = b;
+gint compare_aircraft_counts(gconstpointer a, gconstpointer b) {
+    const AircraftCount *lhs = *((AircraftCount **)a);
+    const AircraftCount *rhs = *((AircraftCount **)b);
     if (!lhs || !rhs) return 0;
-    if (lhs->count > rhs->count) return -1;
     if (lhs->count < rhs->count) return 1;
+    if (lhs->count > rhs->count) return -1;
     const char *id_lhs = aeronave_get_id(lhs->aeronave);
     const char *id_rhs = aeronave_get_id(rhs->aeronave);
     if (!id_lhs) id_lhs = "";
@@ -138,7 +138,7 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
         if (entry && entry->count > 0) g_ptr_array_add(ordenado, entry);
     }
 
-    g_ptr_array_sort_values(ordenado, compare_aircraft_counts);
+    g_ptr_array_sort(ordenado, compare_aircraft_counts);
 
     int wrote = escrever_resultados(ordenado, (int)parsed, caminho_output);
 
