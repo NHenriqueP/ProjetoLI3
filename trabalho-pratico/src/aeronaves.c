@@ -275,16 +275,17 @@ static int validar_identifier(const char *s) {
     return 1;
 }
 
-// Valida se é um número positivo
-static int validar_numero_positivo(const char *s) {
+
+
+static int validar_numero(const char *s) {
     if (!s || strlen(s) == 0) return 0;
     
-    for (size_t i = 0; s[i] != '\0'; i++) {
-        if (!isdigit((unsigned char)s[i])) return 0;
-    }
+    char *endptr;
+    strtol(s, &endptr, 10); // Apenas verifica se é um número válido
     
-    int num = atoi(s);
-    return num > 0;
+    if (*endptr != '\0') return 0;
+
+    return 1;
 }
 
 // Parser de linha CSV para aeronaves
@@ -323,29 +324,31 @@ ParseResultado parse_aeronave_line(char **fields, int n_fields) {
         return r;
     }
     
-    if (!validar_numero_positivo(year_str)) {
+    if (!validar_numero(year_str)) {
         r.motivo = "Year inválido";
         return r;
     }
     
-    if (!validar_numero_positivo(capacity_str)) {
+    if (!validar_numero(capacity_str)) {
         r.motivo = "Capacity inválido";
         return r;
     }
     
-    if (!validar_numero_positivo(range_str)) {
+    if (!validar_numero(range_str)) {
         r.motivo = "Range inválido";
         return r;
     }
     
-    // Converter strings para inteiros
-    int year = atoi(year_str);
-    int capacity = atoi(capacity_str);
-    int range = atoi(range_str);
-    
-    // Validação de ano (entre 1900 e 2100)
-    if (year < 1900 || year > 2100) {
-        r.motivo = "Ano fora do intervalo válido";
+    long year_long = strtol(year_str, NULL, 10);
+    long capacity_long = strtol(capacity_str, NULL, 10);
+    long range_long = strtol(range_str, NULL, 10);
+
+    int year = (int)year_long;
+    int capacity = (int)capacity_long;
+    int range = (int)range_long;
+
+    if (year <1900 || year > 2100) {
+        r.motivo = "Year fora do intervalo válido";
         return r;
     }
     
