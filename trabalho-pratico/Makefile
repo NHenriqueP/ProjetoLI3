@@ -14,6 +14,7 @@ SRC_DIR = src
 OBJ_DIR = obj
 INC_DIR = include
 BIN_DIR = .
+RESULTS_DIR = resultados
 
 # Nome do executável
 TARGET = $(BIN_DIR)/programa-principal
@@ -45,7 +46,7 @@ clean:
 
 # Limpar apenas os ficheiros gerados na pasta de resultados
 clean_outputs:
-	rm -rf resultados/*.txt
+	rm -rf $(RESULTS_DIR)/*.txt $(RESULTS_DIR)/*.csv
 
 # Limpar e recompilar
 rebuild: clean all
