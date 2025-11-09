@@ -21,16 +21,23 @@ TARGET = $(BIN_DIR)/programa-principal
 
 # Ficheiros fonte
 SRCS = $(wildcard $(SRC_DIR)/*.c)
+CORE_SRCS = $(filter-out $(SRC_DIR)/main.c $(SRC_DIR)/programa_testes.c, $(SRCS))
 
-# Ficheiros objeto (substituir src/ por obj/ e .c por .o)
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+CORE_OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CORE_SRCS))
+MAIN_OBJS = $(CORE_OBJS) $(OBJ_DIR)/main.o
+TEST_OBJS = $(CORE_OBJS) $(OBJ_DIR)/programa_testes.o
+
+TEST_TARGET = $(BIN_DIR)/programa-testes
 
 # Regra padrão
-all: $(TARGET)
+all: $(TARGET) $(TEST_TARGET)
 
 # Criar o executável
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) $(LDFLAGS)
+$(TARGET): $(MAIN_OBJS)
+	$(CC) $(CFLAGS) $(MAIN_OBJS) -o $(TARGET) $(LDFLAGS)
+
+$(TEST_TARGET): $(TEST_OBJS)
+	$(CC) $(CFLAGS) $(TEST_OBJS) -o $(TEST_TARGET) $(LDFLAGS)
 
 # Compilar ficheiros .c em .o
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
@@ -42,7 +49,7 @@ $(OBJ_DIR):
 
 # Limpar ficheiros compilados
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	rm -rf $(OBJ_DIR) $(TARGET) $(TEST_TARGET)
 
 # Limpar apenas os ficheiros gerados na pasta de resultados
 clean_outputs:
