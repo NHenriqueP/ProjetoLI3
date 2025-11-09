@@ -281,9 +281,10 @@ static int validar_numero(const char *s) {
     if (!s || strlen(s) == 0) return 0;
     
     char *endptr;
-    strtol(s, &endptr, 10); // Apenas verifica se é um número válido
+    long numero = strtol(s, &endptr, 10); // Apenas verifica se é um número válido
     
-    if (*endptr != '\0') return 0;
+    
+    if (*endptr != '\0' || numero < 0) return 0;
 
     return 1;
 }
