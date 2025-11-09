@@ -4,6 +4,8 @@
 #include "aeroportos.h" // para o tipo AeroportoPtrManager
 #include "voos.h"       // para o tipo VooPtrManager
 #include "aeronaves.h"  // para o tipo AeronavePtrManager
+#include "passageiros.h" // para o tipo PassageiroPtrManager
+#include "reservas.h"    // para o tipo ReservaPtrManager
 
 // Opaque forward declaration to hide internals from users of this API
 typedef struct SistemaGestor SistemaGestor;
@@ -15,5 +17,7 @@ SistemaGestor *criar_gestor_global(void);
 AeroportoPtrManager *gestor_global_get_aeroportos(SistemaGestor *gestor);
 VooPtrManager *gestor_global_get_voos(SistemaGestor *gestor);
 AeronavePtrManager *gestor_global_get_aeronaves(SistemaGestor *gestor);
+PassageiroPtrManager *gestor_global_get_passageiros(SistemaGestor *gestor);
+ReservaPtrManager *gestor_global_get_reservas(SistemaGestor *gestor);
 
 #endif // GESTORGLOBAL_H

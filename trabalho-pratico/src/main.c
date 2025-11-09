@@ -98,6 +98,42 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     );
     if (count_aeronaves < 0) return 0;
 
+    // Carregar passageiros
+    if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "passengers.csv")) return 0;
+    const char *erros_passageiros_rel = "resultados/passengers_errors.csv";
+    l = strlen(erros_passageiros_rel);
+    if (l >= sizeof(caminho_erros)) return 0;
+    for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_passageiros_rel[i];
+    caminho_erros[l] = '\0';
+
+    int count_passageiros = csv_parser(
+        caminho_completo,
+        caminho_erros,
+        gestor_global_get_passageiros(gestor),
+        parse_passageiro_line,
+        passageiro_ptr_manager_add_from_ptr_adapter,
+        ','
+    );
+    if (count_passageiros < 0) return 0;
+
+    // Carregar reservas
+    if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "reservations.csv")) return 0;
+    const char *erros_reservas_rel = "resultados/reservations_errors.csv";
+    l = strlen(erros_reservas_rel);
+    if (l >= sizeof(caminho_erros)) return 0;
+    for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_reservas_rel[i];
+    caminho_erros[l] = '\0';
+
+    int count_reservas = csv_parser(
+        caminho_completo,
+        caminho_erros,
+        gestor_global_get_reservas(gestor),
+        parse_reserva_line,
+        reserva_ptr_manager_add_from_ptr_adapter,
+        ','
+    );
+    if (count_reservas < 0) return 0;
+
     return 1;
 }
 

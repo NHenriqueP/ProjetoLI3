@@ -85,9 +85,10 @@ int csv_parser(
 
     while ((lida = getline(&linha, &tam, ficheiro)) != -1) {
         // Preservar a linha original (incluindo terminadores de linha) para o ficheiro de erros
-        char *linha_original = g_strndup(linha, (size_t)lida);
+        size_t original_len = (size_t)lida;
+        char *linha_original = g_strndup(linha, original_len);
 
-        // Remover \n e \r para efeitos de parsing
+        // Remover \n e \r para efeitos de parsing (sem afetar o comprimento usado para escrever no ficheiro de erros)
         while (lida > 0 && (linha[lida - 1] == '\n' || linha[lida - 1] == '\r')) // \r serve para compatibilidade com Windows
             linha[--lida] = '\0';
 
@@ -122,7 +123,7 @@ int csv_parser(
             }
             // Escreve a linha inválida exatamente como lida (com terminadores originais)
             if (linha_original) {
-                fwrite(linha_original, 1, (size_t) (lida + ((linha[lida] == '\0') ? 0 : 0)), ficheiro_erros_ptr);
+                fwrite(linha_original, 1, original_len, ficheiro_erros_ptr);
             } else {
                 // fallback: escreve versão já normalizada
                 fputs(linha, ficheiro_erros_ptr);
