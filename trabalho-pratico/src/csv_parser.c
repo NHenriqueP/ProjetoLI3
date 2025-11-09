@@ -88,10 +88,11 @@ int csv_parser(
         size_t original_len = (size_t)lida;
         char *linha_original = g_strndup(linha, original_len);
 
+        if (header_lido) {
         // Remover \n e \r para efeitos de parsing (sem afetar o comprimento usado para escrever no ficheiro de erros)
         while (lida > 0 && (linha[lida - 1] == '\n' || linha[lida - 1] == '\r')) // \r serve para compatibilidade com Windows
             linha[--lida] = '\0';
-
+        }
         // Guardar o cabeçalho (primeira linha) e continuar
         if (!header_lido) {
             header = g_strdup(linha);
@@ -113,6 +114,7 @@ int csv_parser(
             // Cria o ficheiro de erros se ainda não existir
             if (!ficheiro_erros_ptr) {
                 ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
+                fwrite(header, 1, strlen(header), ficheiro_erros_ptr);
                 if (!ficheiro_erros_ptr) {
                     fputs("Erro ao criar ficheiro de erros: ", stderr);
                     fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
