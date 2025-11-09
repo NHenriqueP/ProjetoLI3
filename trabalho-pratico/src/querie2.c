@@ -138,7 +138,7 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
         if (entry && entry->count > 0) g_ptr_array_add(ordenado, entry);
     }
 
-    g_ptr_array_sort(ordenado, compare_aircraft_counts);
+    g_ptr_array_sort_values(ordenado, compare_aircraft_counts);
 
     int wrote = escrever_resultados(ordenado, (int)parsed, caminho_output);
 
