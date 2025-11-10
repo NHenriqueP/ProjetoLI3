@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <ctype.h>
 
+// Gestor baseado em ponteiros (usa GArray)
+typedef struct passageiro_ptr_manager{
+    GArray *passageiros; // array de (Passageiro*)
+} PassageiroPtrManager;
+
 // Definição completa da estrutura Passageiro
 typedef struct passageiro {
     char *document_number;  // document number

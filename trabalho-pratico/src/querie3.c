@@ -71,7 +71,7 @@ void execQ3(char linha[], SistemaGestor *gestor, int *Nout) {
 
     VooPtrManager *voos_manager = gestor_global_get_voos(gestor);
     AeroportoPtrManager *aero_manager = gestor_global_get_aeroportos(gestor);
-    if (!voos_manager || !voos_manager->flights || !aero_manager) {
+    if (!voos_manager || !aero_manager) {
         if (write_blank_line(caminho_output)) (*Nout)++;
         return;
     }
@@ -84,19 +84,24 @@ void execQ3(char linha[], SistemaGestor *gestor, int *Nout) {
 
     AirportCount *melhor = NULL;
 
-    for (guint i = 0; i < voos_manager->flights->len; i++) {
-        Voo *voo = g_array_index(voos_manager->flights, Voo*, i);
+    guint total_voos = voo_ptr_manager_count(voos_manager);
+    for (guint i = 0; i < total_voos; i++) {
+        const Voo *voo = voo_ptr_manager_get(voos_manager, i);
         if (!voo) continue;
-        if (voo->estado == CANCELLED) continue;
+        if (voo_get_status(voo) == CANCELLED) continue;
 
-        if (!date_in_range(&voo->actualdeparture.data, &inicio, &fim)) continue;
-        if (voo->iataorigem[0] == '\0') continue;
+        const Horario *actual_departure = voo_get_actual_departure(voo);
+        if (!actual_departure) continue;
+        if (!date_in_range(&actual_departure->data, &inicio, &fim)) continue;
 
-        AirportCount *entry = g_hash_table_lookup(contagens, voo->iataorigem);
+        const char *origem = voo_get_iata_origem(voo);
+        if (!origem || origem[0] == '\0') continue;
+
+        AirportCount *entry = g_hash_table_lookup(contagens, origem);
         if (!entry) {
-            Aeroporto *airport = airport_ptr_manager_find_by_iata(aero_manager, voo->iataorigem);
+            Aeroporto *airport = airport_ptr_manager_find_by_iata(aero_manager, origem);
             if (!airport) continue;
-            char *key = g_strdup(voo->iataorigem);
+            char *key = g_strdup(origem);
             if (!key) continue;
             entry = g_new0(AirportCount, 1);
             if (!entry) {

@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <ctype.h>
 
+// Gestor baseado em ponteiros (usa GArray)
+typedef struct reserva_ptr_manager{
+    GArray *reservas; // array de (Reserva*)
+} ReservaPtrManager;
+
 // Definição completa da estrutura Reserva
 typedef struct reserva {
     char *reservation_id;      // reservation id (ex: R000019411)

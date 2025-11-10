@@ -97,7 +97,7 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
     char caminho_output[256];
     snprintf(caminho_output, sizeof(caminho_output), "resultados/command%d_output.txt", *Nout);
 
-    if (!voos_manager || !aeronaves_manager || !voos_manager->flights || !aeronaves_manager->aeronaves) {
+    if (!voos_manager || !aeronaves_manager || !aeronaves_manager->aeronaves) {
         if (escrever_resultados(NULL, 0, caminho_output)) (*Nout)++;
         return;
     }
@@ -118,13 +118,15 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
         g_hash_table_insert(contagens, (gpointer)id, entry);
     }
 
-    for (guint i = 0; i < voos_manager->flights->len; i++) {
-        Voo *voo = g_array_index(voos_manager->flights, Voo*, i);
+    guint total_voos = voo_ptr_manager_count(voos_manager);
+    for (guint i = 0; i < total_voos; i++) {
+        const Voo *voo = voo_ptr_manager_get(voos_manager, i);
         if (!voo) continue;
-        if (voo->estado == CANCELLED) continue;
-        if (voo->aircraft[0] == '\0') continue;
+        if (voo_get_status(voo) == CANCELLED) continue;
+        const char *aircraft_id = voo_get_aircraft(voo);
+        if (!aircraft_id || aircraft_id[0] == '\0') continue;
 
-        AircraftCount *entry = g_hash_table_lookup(contagens, voo->aircraft);
+        AircraftCount *entry = g_hash_table_lookup(contagens, aircraft_id);
         if (!entry) continue;
         entry->count++;
     }

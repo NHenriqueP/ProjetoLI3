@@ -11,7 +11,6 @@
 #include <sys/stat.h>
 #include <glib.h>
 
-
 // Função que adiciona um elemento válido ao gestor
 typedef int (*GestorAddFunc)(void *gestor, const void *entidade);
 

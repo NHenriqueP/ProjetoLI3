@@ -6,9 +6,7 @@
 
 typedef struct aeroporto Aeroporto; // apenas escrever o typefed struct neste ficheiro e o resto no .c
 typedef struct AeroportoManager AeroportoManager;
-typedef struct {
-    GArray *airports; /* array of (Aeroporto*) */
-} AeroportoPtrManager;
+typedef struct aeroporto_ptr_manager AeroportoPtrManager;
 
 // Criação e destruição do gestor
 AeroportoManager* airport_manager_create();

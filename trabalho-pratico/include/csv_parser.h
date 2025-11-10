@@ -3,9 +3,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef struct {
+typedef struct parse_resultado {
     bool valido;
-    void *entidade; // ponteiro específico: Aeroporto*, Voo*,etc...
+    void *entidade;
     const char *motivo;
 } ParseResultado;
 

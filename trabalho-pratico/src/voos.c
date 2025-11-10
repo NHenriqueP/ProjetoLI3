@@ -4,6 +4,25 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+struct voo_ptr_manager {
+	GArray *flights; /* array de (Voo*) */
+};
+
+struct voo {
+	char idvoo[8];
+	Horario departure;
+	Horario actualdeparture;
+	Horario arrival;
+	Horario actualarrival;
+	int gate;
+	Status estado;
+	char iataorigem[4];
+	char iatadestino[4];
+	char aircraft[10];
+	char airline[50];
+	char *tracking_url;
+};
+
 static void free_voo(Voo *v) {
 	if (!v) return;
 	if (v->tracking_url) g_free(v->tracking_url);
@@ -41,6 +60,17 @@ int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
 	return voo_ptr_manager_add_from_ptr((VooPtrManager*)gestor, (Voo*)entidade);
 }
 
+guint voo_ptr_manager_count(const VooPtrManager *manager) {
+	if (!manager || !manager->flights) return 0;
+	return manager->flights->len;
+}
+
+const Voo* voo_ptr_manager_get(const VooPtrManager *manager, guint index) {
+	if (!manager || !manager->flights) return NULL;
+	if (index >= manager->flights->len) return NULL;
+	return g_array_index(manager->flights, Voo*, index);
+}
+
 Voo* voo_ptr_manager_find_by_id(VooPtrManager *manager, const char *id) {
 	if (!manager || !manager->flights || !id) return NULL;
 	for (guint i = 0; i < manager->flights->len; i++) {
@@ -48,6 +78,54 @@ Voo* voo_ptr_manager_find_by_id(VooPtrManager *manager, const char *id) {
 		if (v && strncmp(v->idvoo, id, sizeof(v->idvoo)) == 0) return v;
 	}
 	return NULL;
+}
+
+const char* voo_get_id(const Voo *voo) {
+	return voo ? voo->idvoo : NULL;
+}
+
+Status voo_get_status(const Voo *voo) {
+	return voo ? voo->estado : ON_TIME;
+}
+
+const char* voo_get_aircraft(const Voo *voo) {
+	return voo ? voo->aircraft : NULL;
+}
+
+const char* voo_get_iata_origem(const Voo *voo) {
+	return voo ? voo->iataorigem : NULL;
+}
+
+const char* voo_get_iata_destino(const Voo *voo) {
+	return voo ? voo->iatadestino : NULL;
+}
+
+const Horario* voo_get_departure(const Voo *voo) {
+	return voo ? &voo->departure : NULL;
+}
+
+const Horario* voo_get_actual_departure(const Voo *voo) {
+	return voo ? &voo->actualdeparture : NULL;
+}
+
+const Horario* voo_get_arrival(const Voo *voo) {
+	return voo ? &voo->arrival : NULL;
+}
+
+const Horario* voo_get_actual_arrival(const Voo *voo) {
+	return voo ? &voo->actualarrival : NULL;
+}
+
+int voo_get_gate(const Voo *voo) {
+	return voo ? voo->gate : -1;
+}
+
+const char* voo_get_airline(const Voo *voo) {
+	return voo ? voo->airline : NULL;
+}
+
+const char* voo_get_tracking_url(const Voo *voo) {
+	return voo ? voo->tracking_url : NULL;
 }
 
 int voo_summary(const Voo *v, char *buf, size_t bufsize) {

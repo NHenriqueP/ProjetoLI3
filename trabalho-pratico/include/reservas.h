@@ -10,9 +10,7 @@ typedef struct reserva Reserva;
 typedef struct ReservaManager ReservaManager;
 
 // Gestor baseado em ponteiros (usa GArray)
-typedef struct {
-    GArray *reservas; // array de (Reserva*)
-} ReservaPtrManager;
+typedef struct reserva_ptr_manager ReservaPtrManager;
 
 // Criação e destruição do gestor
 ReservaManager* reserva_manager_create();

@@ -24,6 +24,10 @@ typedef struct AeroportoManager{
     int count;
 } AeroportoManager;
 
+typedef struct aeroporto_ptr_manager {
+    GArray *airports; /* array of (Aeroporto*) */
+} AeroportoPtrManager;
+
 // Cria um novo AeroportoManager
 AeroportoManager* airport_manager_create() {
     AeroportoManager *manager = malloc(sizeof(AeroportoManager));

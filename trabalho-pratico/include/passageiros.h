@@ -9,9 +9,7 @@ typedef struct passageiro Passageiro;
 typedef struct PassageiroManager PassageiroManager;
 
 // Gestor baseado em ponteiros (usa GArray)
-typedef struct {
-    GArray *passageiros; // array de (Passageiro*)
-} PassageiroPtrManager;
+typedef struct passageiro_ptr_manager PassageiroPtrManager;
 
 // Criação e destruição do gestor
 PassageiroManager* passageiro_manager_create();
