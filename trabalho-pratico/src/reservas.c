@@ -288,10 +288,12 @@ int reserva_summary(const Reserva *reserva, char *buf, size_t bufsize) {
 
 // Valida se o reservation ID é válido (formato R + dígitos)
 static int validar_reservation_id(const char *s) {
-    if (!s || strlen(s) < 2) return 0;
+    if (!s) return 0;
+    size_t len = strlen(s);
+    if (len < 2) return 0;
+    // Formato estrito: R seguido apenas de dígitos. "RES" é inválido.
     if (s[0] != 'R') return 0;
-    
-    for (size_t i = 1; s[i] != '\0'; i++) {
+    for (size_t i = 1; i < len; i++) {
         if (!isdigit((unsigned char)s[i])) return 0;
     }
     return 1;
@@ -336,16 +338,8 @@ static int validar_preco(const char *s, double *out) {
 // Converte string para booleano
 static int parse_boolean(const char *s, bool *out) {
     if (!s || !out) return 0;
-    
-    if (strcmp(s, "true") == 0 || strcmp(s, "1") == 0) {
-        *out = true;
-        return 1;
-    }
-    if (strcmp(s, "false") == 0 || strcmp(s, "0") == 0) {
-        *out = false;
-        return 1;
-    }
-    
+    if (g_ascii_strcasecmp(s, "true") == 0 || strcmp(s, "1") == 0) { *out = true; return 1; }
+    if (g_ascii_strcasecmp(s, "false") == 0 || strcmp(s, "0") == 0) { *out = false; return 1; }
     return 0;
 }
 
@@ -358,27 +352,47 @@ int existe_flight_id(const char* id, SistemaGestor* gestor) {
     return voo != NULL;
  }
 
-int processar_e_validar_flights(const char* flight_ids_str, SistemaGestor* gestor) {
-    if (!flight_ids_str || strlen(flight_ids_str) == 0 || (strlen(flight_ids_str) != 11 && strlen(flight_ids_str) != 22)) return 0;
+static char* trim_spaces(char *s) {
+    if (!s) return s;
+    while (g_ascii_isspace(*s)) s++;
+    char *end = s + strlen(s);
+    while (end > s && g_ascii_isspace(*(end-1))) *(--end) = '\0';
+    return s;
+}
 
-    char destino[23];
-    strncpy(destino, flight_ids_str+2,7);
-
-    destino[7] = '\0';
-
-    if (!isupper(destino[0])) return 0;
-
-    if (!validar_flight_id(destino) || !existe_flight_id(destino, gestor)) return 0;
-    if (strlen(flight_ids_str) == 22) {
-        char destino2[8];
-        strncpy(destino2, flight_ids_str+13,7);
-        destino2[7] = '\0';
-
-        if (!isupper(destino2[0])) return 0;
-
-        if (!validar_flight_id(destino2) || !existe_flight_id(destino2, gestor)) return 0;
+static int extrair_ids_de_lista(const char *src, char ids[][8], int max_ids) {
+    if (!src || max_ids <= 0) return 0;
+    char *copy = g_strdup(src);
+    if (!copy) return 0;
+    char *s = trim_spaces(copy);
+    if (*s == '[') {
+        size_t L = strlen(s);
+        if (L > 0 && s[L-1] == ']') { s[L-1] = '\0'; s++; }
     }
+    int count = 0;
+    for (char *tok = strtok(s, ","); tok && count < max_ids; tok = strtok(NULL, ",")) {
+        tok = trim_spaces(tok);
+        size_t lt = strlen(tok);
+        if (lt >= 2 && ((tok[0]=='\'' && tok[lt-1]=='\'') || (tok[0]=='"' && tok[lt-1]=='"'))) {
+            tok[lt-1] = '\0'; tok++; lt -= 2;
+        }
+        tok = trim_spaces(tok);
+        if (lt >= 7) tok[7] = '\0';
+        g_strlcpy(ids[count], tok, 8);
+        count++;
+    }
+    g_free(copy);
+    return count;
+}
 
+int processar_e_validar_flights(const char* flight_ids_str, SistemaGestor* gestor) {
+    if (!flight_ids_str || *flight_ids_str == '\0') return 0;
+    char ids[2][8] = {{0}};
+    int n = extrair_ids_de_lista(flight_ids_str, ids, 2);
+    if (n < 1 || n > 2) return 0;
+    for (int i = 0; i < n; i++) {
+        if (!validar_flight_id(ids[i]) || !existe_flight_id(ids[i], gestor)) return 0;
+    }
     return 1;
 }
  
@@ -421,6 +435,9 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor* ge
     if (!document_number || strlen(document_number) == 0) {
         r.motivo = "Document number vazio";
         return r;
+    }
+    for (const char *p = document_number; *p; ++p) {
+        if (!isdigit((unsigned char)*p)) { r.motivo = "Document number inválido (apenas dígitos)"; return r; }
     }
     
     if (!validar_seat(seat)) {

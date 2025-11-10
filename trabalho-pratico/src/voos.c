@@ -241,6 +241,8 @@ ParseResultado parse_voo_line(char **fields, int n_fields, SistemaGestor *gestor
 	Horario dep = {0}, act_dep = (Horario){0}, arr = {0}, act_arr = (Horario){0};
 	if (!parse_horario(dep_str, &dep)) { r.motivo = "departure inválido"; return r; }
 	if (!parse_horario(arr_str, &arr)) { r.motivo = "arrival inválido"; return r; }
+	// O arrival agendado tem de ocorrer depois do departure agendado
+	if (comparar_horario(&arr, &dep) <= 0) { r.motivo = "arrival ocorre antes/depois inválido face ao departure"; return r; }
 	int tem_act_dep = 0;
 	int tem_act_arr = 0;
 	if (!parse_horario_optional(act_dep_str, &act_dep, &tem_act_dep)) { r.motivo = "actual departure inválido"; return r; }
