@@ -336,7 +336,7 @@ static int validar_data(const char *s) {
 // Valida gender (M ou F)
 static int validar_gender(const char *s) {
     if (!s || strlen(s) != 1) return 0;
-    return (s[0] == 'M' || s[0] == 'F');
+    return (s[0] == 'M' || s[0] == 'F'|| s[0]=='O');
 }
 
 // Valida email (contém @ e .)
