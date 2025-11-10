@@ -53,6 +53,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
         caminho_completo,
         caminho_erros,
         gestor_global_get_aeroportos(gestor),
+        gestor,
         parse_airport_line,
         airport_ptr_manager_add_from_ptr_adapter,
         ','
@@ -70,6 +71,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
         caminho_completo,
         caminho_erros,
         gestor_global_get_voos(gestor),
+        gestor,
         parse_voo_line,
         voo_ptr_manager_add_from_ptr_adapter,
         ','
@@ -87,6 +89,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
         caminho_completo,
         caminho_erros,
         gestor_global_get_aeronaves(gestor),
+        gestor,
         parse_aeronave_line,
         aeronave_ptr_manager_add_from_ptr_adapter,
         ','
@@ -104,6 +107,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
         caminho_completo,
         caminho_erros,
         gestor_global_get_passageiros(gestor),
+        gestor,
         parse_passageiro_line,
         passageiro_ptr_manager_add_from_ptr_adapter,
         ','
@@ -121,6 +125,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
         caminho_completo,
         caminho_erros,
         gestor_global_get_reservas(gestor),
+        gestor,
         parse_reserva_line,
         reserva_ptr_manager_add_from_ptr_adapter,
         ','

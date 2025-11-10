@@ -209,7 +209,7 @@ int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize) {
 }
 
 /* ---------------- CSV airport line parser (movido do csv_parser.c) -------- */
-ParseResultado parse_airport_line(char **fields, int n_fields) {
+ParseResultado parse_airport_line(char **fields, int n_fields, SistemaGestor *gestor) {
     ParseResultado r;
     r.valido = false;
     r.entidade = NULL;

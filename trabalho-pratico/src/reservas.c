@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "gestorglobal.h"
+#include "voos.h"
 
 // Gestor baseado em ponteiros (usa GArray)
 typedef struct reserva_ptr_manager{
@@ -347,8 +349,43 @@ static int parse_boolean(const char *s, bool *out) {
     return 0;
 }
 
+int existe_flight_id(const char* id, SistemaGestor* gestor) {
+    VooPtrManager *voos_manager = gestor_global_get_voos(gestor);
+    
+    if (!voos_manager) return 0;
+
+    Voo* voo = voo_ptr_manager_find_by_id(voos_manager, id);
+    return voo != NULL;
+ }
+
+int processar_e_validar_flights(const char* flight_ids_str, SistemaGestor* gestor) {
+    if (!flight_ids_str || strlen(flight_ids_str) == 0 || (strlen(flight_ids_str) != 11 && strlen(flight_ids_str) != 22)) return 0;
+
+    char destino[23];
+    strncpy(destino, flight_ids_str+2,7);
+
+    destino[7] = '\0';
+
+    if (!isupper(destino[0])) return 0;
+
+    if (!validar_flight_id(destino) || !existe_flight_id(destino, gestor)) return 0;
+    if (strlen(flight_ids_str) == 22) {
+        char destino2[8];
+        strncpy(destino2, flight_ids_str+13,7);
+        destino2[7] = '\0';
+
+        if (!isupper(destino2[0])) return 0;
+
+        if (!validar_flight_id(destino2) || !existe_flight_id(destino2, gestor)) return 0;
+    }
+
+    return 1;
+}
+ 
+
+
 // Parser de linha CSV para reservas
-ParseResultado parse_reserva_line(char **fields, int n_fields) {
+ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor* gestor) {
     ParseResultado r;
     r.valido = false;
     r.entidade = NULL;
@@ -376,7 +413,7 @@ ParseResultado parse_reserva_line(char **fields, int n_fields) {
         return r;
     }
     
-    if (!flight_ids || strlen(flight_ids) == 0) {
+    if (!processar_e_validar_flights(flight_ids, gestor)) {
         r.motivo = "Flight IDs vazio";
         return r;
     }

@@ -290,7 +290,7 @@ static int validar_numero(const char *s) {
 }
 
 // Parser de linha CSV para aeronaves
-ParseResultado parse_aeronave_line(char **fields, int n_fields) {
+ParseResultado parse_aeronave_line(char **fields, int n_fields, SistemaGestor* gestor) {
     ParseResultado r;
     r.valido = false;
     r.entidade = NULL;

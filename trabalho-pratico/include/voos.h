@@ -48,6 +48,7 @@ const Horario* voo_get_actual_arrival(const Voo *voo);
 int voo_get_gate(const Voo *voo);
 const char* voo_get_airline(const Voo *voo);
 const char* voo_get_tracking_url(const Voo *voo);
+int validar_flight_id(const char *s);
 
 // Summary formatting helper
 int voo_summary(const Voo *voo, char *buf, size_t bufsize);

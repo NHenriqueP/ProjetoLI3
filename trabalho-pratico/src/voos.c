@@ -3,9 +3,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "gestorglobal.h"
+#include <ctype.h>
 
 struct voo_ptr_manager {
 	GArray *flights; /* array de (Voo*) */
+	GHashTable *by_id; /* hash para pesquisa rápida por flight id */
 };
 
 struct voo {
@@ -33,7 +36,13 @@ VooPtrManager* voo_ptr_manager_create() {
 	VooPtrManager *m = malloc(sizeof(VooPtrManager));
 	if (!m) return NULL;
 	m->flights = g_array_new(FALSE, FALSE, sizeof(Voo*));
-	if (!m->flights) { free(m); return NULL; }
+	m->by_id = g_hash_table_new(g_str_hash, g_str_equal);
+	if (!m->flights || !m->by_id) {
+		if (m->flights) g_array_free(m->flights, TRUE);
+		if (m->by_id) g_hash_table_destroy(m->by_id);
+		free(m);
+		return NULL;
+	}
 	return m;
 }
 
@@ -46,12 +55,18 @@ void voo_ptr_manager_destroy(VooPtrManager *manager) {
 		}
 		g_array_free(manager->flights, TRUE);
 	}
+	if (manager->by_id) g_hash_table_destroy(manager->by_id);
 	free(manager);
 }
 
 int voo_ptr_manager_add_from_ptr(VooPtrManager *manager, Voo *entidade) {
 	if (!manager || !entidade) return 0;
+	if (manager->by_id && g_hash_table_lookup(manager->by_id, entidade->idvoo)) {
+		free_voo(entidade);
+		return 1; /* já existe: ignora duplicados mantendo o primeiro */
+	}
 	g_array_append_val(manager->flights, entidade);
+	g_hash_table_insert(manager->by_id, entidade->idvoo, entidade);
 	return 1;
 }
 
@@ -72,12 +87,8 @@ const Voo* voo_ptr_manager_get(const VooPtrManager *manager, guint index) {
 }
 
 Voo* voo_ptr_manager_find_by_id(VooPtrManager *manager, const char *id) {
-	if (!manager || !manager->flights || !id) return NULL;
-	for (guint i = 0; i < manager->flights->len; i++) {
-		Voo *v = g_array_index(manager->flights, Voo*, i);
-		if (v && strncmp(v->idvoo, id, sizeof(v->idvoo)) == 0) return v;
-	}
-	return NULL;
+	if (!manager || !manager->by_id || !id) return NULL;
+	return g_hash_table_lookup(manager->by_id, id);
 }
 
 const char* voo_get_id(const Voo *voo) {
@@ -183,15 +194,17 @@ static Status parse_status(const char *s, int *ok) {
     *ok = 0; return ON_TIME;
 }
 
-static int validar_flight_id(const char *s) {
-	if (!s) return 0;
-	size_t len = strlen(s);
-	if (len == 0 || len >= sizeof(((Voo*)0)->idvoo)) return 0; // 1..7
-	for (size_t i = 0; i < len; i++) {
-		unsigned char c = (unsigned char)s[i];
-		if (!(g_ascii_isalnum(c))) return 0;
+int validar_flight_id(const char *s) {
+	if (!s || strlen(s) != 7) return 0;
+	
+	for (int j = 0; j < 2; j++) {
+		if (!isupper((unsigned char)s[j])) return 0;
+	}
+	for (int i = 2; i < 7; i++) {
+		if (!isdigit((unsigned char)s[i])) return 0;
 	}
 	return 1;
+
 }
 
 static int validar_url_http(const char *s) {
@@ -199,7 +212,7 @@ static int validar_url_http(const char *s) {
 	return g_str_has_prefix(s, "http://") || g_str_has_prefix(s, "https://");
 }
 
-ParseResultado parse_voo_line(char **fields, int n_fields) {
+ParseResultado parse_voo_line(char **fields, int n_fields, SistemaGestor *gestor) {
 	ParseResultado r; r.valido = false; r.entidade = NULL; r.motivo = NULL;
 	if (n_fields < 12) { r.motivo = "Número incorreto de campos"; return r; }
 

@@ -57,6 +57,7 @@ int csv_parser(
     const char *caminho_csv,       // Caminho do ficheiro a ler
     const char *ficheiro_erros,    // Caminho para o ficheiro de erros
     void *gestor,                  // Ponteiro para o gestor
+    void *gestorGlob,                 // Ponteiro para o gestor global
     LinhaParser parser_func,       // Função que faz o parsing da linha
     GestorAddFunc add_func,        // Função que adiciona a entidade válida
     char separador                 // Separador CSV: ','
@@ -107,7 +108,7 @@ int csv_parser(
         int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
 
         // Validar linha com o parser específico fornecido
-        ParseResultado resultado = parser_func(fields, n_fields);
+        ParseResultado resultado = parser_func(fields, n_fields, gestorGlob);
 
         if (!resultado.valido) {
             // Cria o ficheiro de erros se ainda não existir
