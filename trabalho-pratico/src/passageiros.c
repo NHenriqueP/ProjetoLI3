@@ -300,11 +300,12 @@ int passageiro_summary(const Passageiro *passageiro, char *buf, size_t bufsize) 
 
 // Valida se o document number é válido (apenas dígitos)
 static int validar_document_number(const char *s) {
-    if (!s || strlen(s) == 0) return 0;
-    
-    for (size_t i = 0; s[i] != '\0'; i++) {
-        if (!isdigit((unsigned char)s[i])) return 0;
-    }
+    if (!s || strlen(s) != 9) return 0; // Exemplo: deve ter exatamente 9 dígitos
+
+    char *endp;
+    strtol(s, &endp, 10); // tenta converter
+    if (*endp != '\0') return 0; // se não consumiu toda a string, é inválido
+
     return 1;
 }
 
