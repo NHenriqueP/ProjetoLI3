@@ -140,6 +140,7 @@ ParseResultado parse_voo_line(char **fields, int n_fields) {
 
 	if (!validar_flight_id(flight_id)) { r.motivo = "flight id inválido"; return r; }
 	if (!validar_iata(origem) || !validar_iata(destino)) { r.motivo = "IATA origem/destino inválido"; return r; }
+	if (strcmp(origem, destino) == 0) { r.motivo = "IATA de origem e destino não podem ser iguais"; return r; }
 	if (!aircraft || strlen(aircraft) >= sizeof(((Voo*)0)->aircraft)) { r.motivo = "aircraft demasiado longo"; return r; }
 	if (!airline || strlen(airline) >= sizeof(((Voo*)0)->airline)) { r.motivo = "airline demasiado longo"; return r; }
 
