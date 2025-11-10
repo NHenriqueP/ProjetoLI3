@@ -74,6 +74,16 @@ static int parse_horario(const char *s, Horario *h) {
     return 1;
 }
 
+static int comparar_horario(const Horario *a, const Horario *b) {
+	if (!a || !b) return 0;
+	if (a->data.year != b->data.year) return (a->data.year > b->data.year) ? 1 : -1;
+	if (a->data.month != b->data.month) return (a->data.month > b->data.month) ? 1 : -1;
+	if (a->data.day != b->data.day) return (a->data.day > b->data.day) ? 1 : -1;
+	if (a->hora.hora != b->hora.hora) return (a->hora.hora > b->hora.hora) ? 1 : -1;
+	if (a->hora.minuto != b->hora.minuto) return (a->hora.minuto > b->hora.minuto) ? 1 : -1;
+	return 0;
+}
+
 static Status parse_status(const char *s, int *ok) {
     *ok = 1;
     if (!s) { *ok = 0; return ON_TIME; }
@@ -130,6 +140,7 @@ ParseResultado parse_voo_line(char **fields, int n_fields) {
 	// actuals: obrigatórios e válidos
 	if (!parse_horario(act_dep_str, &act_dep)) { r.motivo = "actual departure inválido"; return r; }
 	if (!parse_horario(act_arr_str, &act_arr)) { r.motivo = "actual arrival inválido"; return r; }
+	if (comparar_horario(&act_dep, &act_arr) <= 0) { r.motivo = "actual departure não ocorre depois de actual arrival"; return r; }
 
 	int ok_status = 0; Status st = parse_status(status_str, &ok_status);
 	if (!ok_status) { r.motivo = "status inválido"; return r; }
