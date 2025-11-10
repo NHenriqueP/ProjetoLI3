@@ -103,11 +103,11 @@ const char* voo_get_aircraft(const Voo *voo) {
 	return voo ? voo->aircraft : NULL;
 }
 
-const char* voo_get_iata_origem(const Voo *voo) {
+char* voo_get_iata_origem(const Voo *voo) {
 	return voo ? voo->iataorigem : NULL;
 }
 
-const char* voo_get_iata_destino(const Voo *voo) {
+char* voo_get_iata_destino(const Voo *voo) {
 	return voo ? voo->iatadestino : NULL;
 }
 

@@ -288,11 +288,11 @@ int reserva_summary(const Reserva *reserva, char *buf, size_t bufsize) {
 
 // Valida se o reservation ID é válido (formato R + dígitos)
 static int validar_reservation_id(const char *s) {
-    if (!s) return 0;
+    if (!s || strlen(s) != 10) return 0;
     size_t len = strlen(s);
-    if (len < 2) return 0;
-    // Formato estrito: R seguido apenas de dígitos. "RES" é inválido.
+
     if (s[0] != 'R') return 0;
+
     for (size_t i = 1; i < len; i++) {
         if (!isdigit((unsigned char)s[i])) return 0;
     }
@@ -392,6 +392,13 @@ int processar_e_validar_flights(const char* flight_ids_str, SistemaGestor* gesto
     if (n < 1 || n > 2) return 0;
     for (int i = 0; i < n; i++) {
         if (!validar_flight_id(ids[i]) || !existe_flight_id(ids[i], gestor)) return 0;
+    }
+
+    if (n==2) {
+       char *destino = voo_get_iata_destino(voo_ptr_manager_find_by_id(gestor_global_get_voos(gestor), ids[0]));
+       char *origem = voo_get_iata_origem(voo_ptr_manager_find_by_id(gestor_global_get_voos(gestor), ids[1]));
+
+       return (strcmp(origem, destino) == 0);
     }
     return 1;
 }
