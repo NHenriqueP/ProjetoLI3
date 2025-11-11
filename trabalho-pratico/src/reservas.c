@@ -391,7 +391,7 @@ int processar_e_validar_flights(const char* flight_ids_str, SistemaGestor* gesto
     int n = extrair_ids_de_lista(flight_ids_str, ids, 2);
     if (n < 1 || n > 2) return 0;
     for (int i = 0; i < n; i++) {
-        if (!validar_flight_id(ids[i]) || !existe_flight_id(ids[i], gestor)) return 0;
+        if (!validar_flight_id(ids[i])) return 0;
     }
 
     if (n==2) {
