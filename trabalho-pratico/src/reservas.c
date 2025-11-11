@@ -439,8 +439,8 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor* ge
         return r;
     }
     
-    if (!document_number || strlen(document_number) == 0) {
-        r.motivo = "Document number vazio";
+    if (!document_number || strlen(document_number) == 0 || strlen(document_number) > 9) {
+        r.motivo = "Document number inválido";
         return r;
     }
     for (const char *p = document_number; *p; ++p) {
