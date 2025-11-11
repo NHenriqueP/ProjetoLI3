@@ -294,11 +294,9 @@ ParseResultado parse_aeronave_line(char **fields, int n_fields, SistemaGestor* g
     ParseResultado r;
     r.valido = false;
     r.entidade = NULL;
-    r.motivo = NULL;
     
     // Esperamos 6 campos: identifier, manufacturer, model, year, capacity, range
     if (n_fields < 6) {
-        r.motivo = "Número incorreto de campos";
         return r;
     }
     
@@ -311,32 +309,26 @@ ParseResultado parse_aeronave_line(char **fields, int n_fields, SistemaGestor* g
     
     // Validações
     if (!validar_identifier(identifier)) {
-        r.motivo = "Identifier inválido";
         return r;
     }
     
     if (!manufacturer || strlen(manufacturer) == 0) {
-        r.motivo = "Manufacturer vazio";
         return r;
     }
     
     if (!model || strlen(model) == 0) {
-        r.motivo = "Model vazio";
         return r;
     }
     
     if (!validar_numero(year_str)) {
-        r.motivo = "Year inválido";
         return r;
     }
     
     if (!validar_numero(capacity_str)) {
-        r.motivo = "Capacity inválido";
         return r;
     }
     
     if (!validar_numero(range_str)) {
-        r.motivo = "Range inválido";
         return r;
     }
     
@@ -349,14 +341,12 @@ ParseResultado parse_aeronave_line(char **fields, int n_fields, SistemaGestor* g
     int range = (int)range_long;
 
     if (year <1900 || year > 2100) {
-        r.motivo = "Year fora do intervalo válido";
         return r;
     }
     
     // Criar aeronave
     Aeronave *a = g_new0(Aeronave, 1);
     if (!a) {
-        r.motivo = "Falha de memória ao criar aeronave";
         return r;
     }
     
@@ -372,7 +362,6 @@ ParseResultado parse_aeronave_line(char **fields, int n_fields, SistemaGestor* g
         g_free(a->fabricante);
         g_free(a->modelo);
         g_free(a);
-        r.motivo = "Erro de alocação de memória";
         return r;
     }
     

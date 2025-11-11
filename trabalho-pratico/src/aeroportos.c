@@ -213,11 +213,9 @@ ParseResultado parse_airport_line(char **fields, int n_fields, SistemaGestor *ge
     ParseResultado r;
     r.valido = false;
     r.entidade = NULL;
-    r.motivo = NULL;
 
     // Esperamos pelo menos 8 campos: IATA, Nome, Cidade, País, Latitude, Longitude, ICAO, Tipo
     if (n_fields < 8) {
-        r.motivo = "Número incorreto de campos";
         return r;
     }
 
@@ -231,33 +229,27 @@ ParseResultado parse_airport_line(char **fields, int n_fields, SistemaGestor *ge
     char *tipo      = fields[7];
 
     if (!validar_iata(iata)) {
-        r.motivo = "IATA inválido";
         return r;
     }
 
     if (!validar_icao(icao)) {
-        r.motivo = "ICAO inválido";
         return r;
     }
 
     if (!validar_latitude(latitude) || !validar_longitude(longitude)) {
-        r.motivo = "Latitude ou longitude inválida";
         return r;
     }
 
     if (!nome || !cidade || !pais || strlen(nome) == 0 || strlen(cidade) == 0 || strlen(pais) == 0) {
-        r.motivo = "Campos de texto vazios";
         return r;
     }
 
     if (tipo_aeroporto_valido(tipo) == 0) {
-        r.motivo = "tipo do aeroporto inválido";
         return r;
     }
 
     Aeroporto *a = g_new0(Aeroporto, 1);
     if (!a) {
-        r.motivo = "Falha de memória ao criar aeroporto";
         return r;
     }
 
@@ -275,7 +267,6 @@ ParseResultado parse_airport_line(char **fields, int n_fields, SistemaGestor *ge
         g_free(a->iata); g_free(a->nome); g_free(a->cidade);
         g_free(a->pais); g_free(a->latitude); g_free(a->longitude);
         g_free(a->icao); g_free(a->tipo); g_free(a);
-        r.motivo = "Erro de alocação de memória";
         return r;
     }
 

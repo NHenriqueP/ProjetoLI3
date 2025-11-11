@@ -7,7 +7,6 @@
 typedef struct parse_resultado {
     bool valido;
     void *entidade;
-    const char *motivo;
 } ParseResultado;
 
 // Função que vai dar ao gestor x a entidade correspondente

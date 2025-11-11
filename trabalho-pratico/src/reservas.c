@@ -410,12 +410,10 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor* ge
     ParseResultado r;
     r.valido = false;
     r.entidade = NULL;
-    r.motivo = NULL;
     
     // Esperamos 8 campos: reservation id, flight ids, document number, seat, 
     //                     price, extra luggage, priority boarding, qr code
     if (n_fields < 8) {
-        r.motivo = "Número incorreto de campos";
         return r;
     }
     
@@ -430,43 +428,36 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor* ge
     
     // Validações
     if (!validar_reservation_id(reservation_id)) {
-        r.motivo = "Reservation ID inválido";
         return r;
     }
     
     if (!processar_e_validar_flights(flight_ids, gestor)) {
-        r.motivo = "Flight IDs vazio";
         return r;
     }
     
     if (!document_number || strlen(document_number) == 0 || strlen(document_number) > 9) {
-        r.motivo = "Document number inválido";
         return r;
     }
     for (const char *p = document_number; *p; ++p) {
-        if (!isdigit((unsigned char)*p)) { r.motivo = "Document number inválido (apenas dígitos)"; return r; }
+        if (!isdigit((unsigned char)*p)) { return r; }
     }
     
     if (!validar_seat(seat)) {
-        r.motivo = "Seat inválido";
         return r;
     }
     
     double price;
     if (!validar_preco(price_str, &price)) {
-        r.motivo = "Price inválido";
         return r;
     }
     
     bool extra_luggage;
     if (!parse_boolean(extra_luggage_str, &extra_luggage)) {
-        r.motivo = "Extra luggage inválido (deve ser true/false)";
         return r;
     }
     
     bool priority_boarding;
     if (!parse_boolean(priority_str, &priority_boarding)) {
-        r.motivo = "Priority boarding inválido (deve ser true/false)";
         return r;
     }
     
@@ -475,7 +466,6 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor* ge
     // Criar reserva
     Reserva *res = g_new0(Reserva, 1);
     if (!res) {
-        r.motivo = "Falha de memória ao criar reserva";
         return r;
     }
     
@@ -496,7 +486,6 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor* ge
         g_free(res->seat);
         g_free(res->qr_code);
         g_free(res);
-        r.motivo = "Erro de alocação de memória";
         return r;
     }
     

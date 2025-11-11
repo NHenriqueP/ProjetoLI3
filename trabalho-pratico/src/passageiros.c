@@ -304,14 +304,14 @@ int passageiro_summary(const Passageiro *passageiro, char *buf, size_t bufsize) 
 // ==================== CSV PARSER ====================
 
 // Valida se o document number é válido (apenas dígitos)
-static int validar_document_number(const char *s) {
-    if (!s || strlen(s) != 9) return 0; // Exemplo: deve ter exatamente 9 dígitos
+static int validar_document_number(const char *s, size_t len) {
+    if (!s || len != 9) return 0; // deve ter exatamente 9 dígitos
 
-    char *endp;
-    strtol(s, &endp, 10); // tenta converter
-    if (*endp != '\0') return 0; // se não consumiu toda a string, é inválido
+    for (size_t i = 0; i < len; i++) {
+        if (!isdigit((unsigned char)s[i])) return 0;
+    }
 
-    return 1;
+    return s[9] == '\0';
 }
 
 // Valida data no formato YYYY-MM-DD
@@ -368,12 +368,11 @@ ParseResultado parse_passageiro_line(char **fields, int n_fields, SistemaGestor*
     ParseResultado r;
     r.valido = false;
     r.entidade = NULL;
-    r.motivo = NULL;
+    /* motivo removed to reduce parse result size */
     
     // Esperamos 10 campos: document number, first name, last name, dob, nationality, 
     //                      gender, email, phone, address, photo
     if (n_fields < 10) {
-        r.motivo = "Número incorreto de campos";
         return r;
     }
     
@@ -387,50 +386,96 @@ ParseResultado parse_passageiro_line(char **fields, int n_fields, SistemaGestor*
     char *phone           = fields[7];
     char *address         = fields[8];
     char *photo           = fields[9];
+
+    size_t document_number_len = 0;
+    size_t first_name_len = 0;
+    size_t last_name_len = 0;
+    size_t dob_len = 0;
+    size_t nationality_len = 0;
+    size_t gender_len = 0;
+    size_t email_len = 0;
+    size_t phone_len = 0;
+    size_t address_len = 0;
     
     // Validações
-    if (!validar_document_number(document_number)) {
-        r.motivo = "Document number inválido";
+    if (!document_number) {
+        return r;
+    }
+
+    document_number_len = strlen(document_number);
+    if (!validar_document_number(document_number, document_number_len)) {
         return r;
     }
     
-    if (!first_name || strlen(first_name) == 0) {
-        r.motivo = "First name vazio";
+    if (!first_name) {
+        return r;
+    }
+
+    first_name_len = strlen(first_name);
+    if (first_name_len == 0) {
         return r;
     }
     
-    if (!last_name || strlen(last_name) == 0) {
-        r.motivo = "Last name vazio";
+    if (!last_name) {
+        return r;
+    }
+
+    last_name_len = strlen(last_name);
+    if (last_name_len == 0) {
         return r;
     }
     
+    if (!dob) {
+        return r;
+    }
+
+    dob_len = strlen(dob);
     if (!validar_data(dob)) {
-        r.motivo = "Data de nascimento inválida";
         return r;
     }
     
-    if (!nationality || strlen(nationality) == 0) {
-        r.motivo = "Nationality vazio";
+    if (!nationality) {
+        return r;
+    }
+
+    nationality_len = strlen(nationality);
+    if (nationality_len == 0) {
         return r;
     }
     
+    if (!gender) {
+        return r;
+    }
+
+    gender_len = strlen(gender);
     if (!validar_gender(gender)) {
-        r.motivo = "Gender inválido (deve ser M ou F)";
         return r;
     }
     
+    if (!email) {
+        return r;
+    }
+
+    email_len = strlen(email);
     if (!validar_email(email)) {
-        r.motivo = "Email inválido";
         return r;
     }
     
-    if (!phone || strlen(phone) == 0) {
-        r.motivo = "Phone vazio";
+    if (!phone) {
+        return r;
+    }
+
+    phone_len = strlen(phone);
+    if (phone_len == 0) {
         return r;
     }
     
-    if (!address || strlen(address) == 0) {
-        r.motivo = "Address vazio";
+    if (!address) {
+        return r;
+    }
+
+    address_len = strlen(address);
+    if (address_len == 0) {
         return r;
     }
     
@@ -439,20 +484,21 @@ ParseResultado parse_passageiro_line(char **fields, int n_fields, SistemaGestor*
     // Criar passageiro
     Passageiro *p = g_new0(Passageiro, 1);
     if (!p) {
-        r.motivo = "Falha de memória ao criar passageiro";
         return r;
     }
     
-    p->document_number = g_strdup(document_number);
-    p->first_name = g_strdup(first_name);
-    p->last_name = g_strdup(last_name);
-    p->dob = g_strdup(dob);
-    p->nationality = g_strdup(nationality);
-    p->gender = g_strdup(gender);
-    p->email = g_strdup(email);
-    p->phone = g_strdup(phone);
-    p->address = g_strdup(address);
-    p->photo = g_strdup(photo ? photo : "");
+    p->document_number = (char*)g_memdup2(document_number, document_number_len + 1);
+    p->first_name = (char*)g_memdup2(first_name, first_name_len + 1);
+    p->last_name = (char*)g_memdup2(last_name, last_name_len + 1);
+    p->dob = (char*)g_memdup2(dob, dob_len + 1);
+    p->nationality = (char*)g_memdup2(nationality, nationality_len + 1);
+    p->gender = (char*)g_memdup2(gender, gender_len + 1);
+    p->email = (char*)g_memdup2(email, email_len + 1);
+    p->phone = (char*)g_memdup2(phone, phone_len + 1);
+    p->address = (char*)g_memdup2(address, address_len + 1);
+
+    size_t photo_len = photo ? strlen(photo) : 0;
+    p->photo = (char*)g_memdup2(photo ? photo : "", photo_len + 1);
     
     if (!p->document_number || !p->first_name || !p->last_name || !p->dob ||
         !p->nationality || !p->gender || !p->email || !p->phone || !p->address || !p->photo) {
@@ -467,7 +513,6 @@ ParseResultado parse_passageiro_line(char **fields, int n_fields, SistemaGestor*
         g_free(p->address);
         g_free(p->photo);
         g_free(p);
-        r.motivo = "Erro de alocação de memória";
         return r;
     }
     
