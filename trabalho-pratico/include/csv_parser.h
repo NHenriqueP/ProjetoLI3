@@ -27,16 +27,6 @@ int csv_parser(
     char separador
 );
 
-// Parser específico para linhas de aeroportos (retorna entidade alocada em caso de valido)
-ParseResultado parse_airport_line(char **fields, int n_fields, SistemaGestor *gestor);
-// Parser específico para linhas de aeronaves
-ParseResultado parse_aeronave_line(char **fields, int n_fields, SistemaGestor *gestor);
-// Parser específico para linhas de passageiros
-ParseResultado parse_passageiro_line(char **fields, int n_fields, SistemaGestor *gestor);
-// Parser específico para linhas de reservas
-ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor *gestor);
-// Parser específico para linhas de voos (stub inicial)
-ParseResultado parse_voo_line(char **fields, int n_fields, SistemaGestor *gestor);
 // Validadores auxiliares expostos (úteis para outros módulos)
 int validar_iata(const char *s);
 int validar_icao(const char *s);
