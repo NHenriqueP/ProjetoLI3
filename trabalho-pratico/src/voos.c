@@ -1,98 +1,14 @@
 #include "voos.h"
 #include "csv_parser.h"
+#include <glib.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "gestorglobal.h"
 #include <ctype.h>
 
-struct voo_ptr_manager {
-	GArray *flights; /* array de (Voo*) */
-	GHashTable *by_id; /* hash para pesquisa rápida por flight id */
-};
-
-struct voo {
-	char idvoo[8];
-	Horario departure;
-	Horario actualdeparture;
-	Horario arrival;
-	Horario actualarrival;
-	int gate;
-	Status estado;
-	char iataorigem[4];
-	char iatadestino[4];
-	char aircraft[10];
-	char airline[50];
-	char *tracking_url;
-};
-
-static void free_voo(Voo *v) {
-	if (!v) return;
-	if (v->tracking_url) g_free(v->tracking_url);
-	g_free(v);
-}
-
-VooPtrManager* voo_ptr_manager_create() {
-	VooPtrManager *m = malloc(sizeof(VooPtrManager));
-	if (!m) return NULL;
-	m->flights = g_array_new(FALSE, FALSE, sizeof(Voo*));
-	m->by_id = g_hash_table_new(g_str_hash, g_str_equal);
-	if (!m->flights || !m->by_id) {
-		if (m->flights) g_array_free(m->flights, TRUE);
-		if (m->by_id) g_hash_table_destroy(m->by_id);
-		free(m);
-		return NULL;
-	}
-	return m;
-}
-
-void voo_ptr_manager_destroy(VooPtrManager *manager) {
-	if (!manager) return;
-	if (manager->flights) {
-		for (guint i = 0; i < manager->flights->len; i++) {
-			Voo *v = g_array_index(manager->flights, Voo*, i);
-			if (v) free_voo(v);
-		}
-		g_array_free(manager->flights, TRUE);
-	}
-	if (manager->by_id) g_hash_table_destroy(manager->by_id);
-	free(manager);
-}
-
-int voo_ptr_manager_add_from_ptr(VooPtrManager *manager, Voo *entidade) {
-	if (!manager || !entidade) return 0;
-	if (manager->by_id && g_hash_table_lookup(manager->by_id, entidade->idvoo)) {
-		free_voo(entidade);
-		return 1; /* já existe: ignora duplicados mantendo o primeiro */
-	}
-	g_array_append_val(manager->flights, entidade);
-	g_hash_table_insert(manager->by_id, entidade->idvoo, entidade);
-	return 1;
-}
-
-int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
-	if (!gestor || !entidade) return 0;
-	return voo_ptr_manager_add_from_ptr((VooPtrManager*)gestor, (Voo*)entidade);
-}
-
-guint voo_ptr_manager_count(const VooPtrManager *manager) {
-	if (!manager || !manager->flights) return 0;
-	return manager->flights->len;
-}
-
-const Voo* voo_ptr_manager_get(const VooPtrManager *manager, guint index) {
-	if (!manager || !manager->flights) return NULL;
-	if (index >= manager->flights->len) return NULL;
-	return g_array_index(manager->flights, Voo*, index);
-}
-
-Voo* voo_ptr_manager_find_by_id(VooPtrManager *manager, const char *id) {
-	if (!manager || !manager->by_id || !id) return NULL;
-	return g_hash_table_lookup(manager->by_id, id);
-}
-
 const char* voo_get_id(const Voo *voo) {
-	return voo ? voo->idvoo : NULL;
+    return voo ? voo->idvoo : NULL;
 }
 
 Status voo_get_status(const Voo *voo) {
@@ -100,15 +16,15 @@ Status voo_get_status(const Voo *voo) {
 }
 
 const char* voo_get_aircraft(const Voo *voo) {
-	return voo ? voo->aircraft : NULL;
+    return voo ? voo->aircraft : NULL;
 }
 
-char* voo_get_iata_origem(const Voo *voo) {
-	return voo ? voo->iataorigem : NULL;
+const char* voo_get_iata_origem(const Voo *voo) {
+    return voo ? voo->iataorigem : NULL;
 }
 
-char* voo_get_iata_destino(const Voo *voo) {
-	return voo ? voo->iatadestino : NULL;
+const char* voo_get_iata_destino(const Voo *voo) {
+    return voo ? voo->iatadestino : NULL;
 }
 
 const Horario* voo_get_departure(const Voo *voo) {

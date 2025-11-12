@@ -1,15 +1,20 @@
 #include "app_runner.h"
 
 #include "aeronaves.h"
+#include "gestor_aeronave.h"
 #include "aeroportos.h"
+#include "gestor_aeroporto.h"
 #include "csv_parser.h"
 #include "gestorglobal.h"
 #include "passageiros.h"
+#include "gestor_passageiro.h"
 #include "querie1.h"
 #include "querie2.h"
 #include "querie3.h"
 #include "reservas.h"
+#include "gestor_reserva.h"
 #include "voos.h"
+#include "gestor_voo.h"
 
 #include <stdio.h>
 #include <string.h>

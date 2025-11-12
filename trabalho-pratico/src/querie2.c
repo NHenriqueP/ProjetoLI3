@@ -13,7 +13,7 @@
 #include "gestorglobal.h"
 
 typedef struct {
-    Aeronave *aeronave;
+    const Aeronave *aeronave;
     int count;
 } AircraftCount;
 
@@ -97,15 +97,16 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
     char caminho_output[256];
     snprintf(caminho_output, sizeof(caminho_output), "resultados/command%d_output.txt", *Nout);
 
-    if (!voos_manager || !aeronaves_manager || !aeronaves_manager->aeronaves) {
+    if (!voos_manager || !aeronaves_manager || aeronave_ptr_manager_count(aeronaves_manager) == 0) {
         if (escrever_resultados(NULL, 0, caminho_output)) (*Nout)++;
         return;
     }
 
     GHashTable *contagens = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
 
-    for (guint i = 0; i < aeronaves_manager->aeronaves->len; i++) {
-        Aeronave *a = g_array_index(aeronaves_manager->aeronaves, Aeronave*, i);
+    guint total_aeronaves = aeronave_ptr_manager_count(aeronaves_manager);
+    for (guint i = 0; i < total_aeronaves; i++) {
+        const Aeronave *a = aeronave_ptr_manager_get(aeronaves_manager, i);
         if (!a) continue;
         const char *id = aeronave_get_id(a);
         if (!id || *id == '\0') continue;

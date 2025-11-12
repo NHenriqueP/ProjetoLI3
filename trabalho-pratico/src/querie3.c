@@ -2,6 +2,7 @@
 #include "querie3.h"
 
 #include "aeroportos.h"
+#include "gestor_aeroporto.h"
 #include "voos.h"
 
 #include <glib.h>

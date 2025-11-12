@@ -1,11 +1,11 @@
 #ifndef GESTORGLOBAL_H
 #define GESTORGLOBAL_H
 
-#include "aeroportos.h" // para o tipo AeroportoPtrManager
-#include "voos.h"       // para o tipo VooPtrManager
-#include "aeronaves.h"  // para o tipo AeronavePtrManager
-#include "passageiros.h" // para o tipo PassageiroPtrManager
-#include "reservas.h"    // para o tipo ReservaPtrManager
+#include "gestor_aeroporto.h"
+#include "gestor_voo.h"
+#include "gestor_aeronave.h"
+#include "gestor_passageiro.h"
+#include "gestor_reserva.h"
 
 // Opaque forward declaration to hide internals from users of this API
 typedef struct SistemaGestor SistemaGestor;

@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include "aeroportos.h"
+#include "gestor_aeroporto.h"
 #include "gestorglobal.h"
 
 void execQ1(char linha[],SistemaGestor *gestor, int *Nout) {
