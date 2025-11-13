@@ -48,7 +48,7 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
 # Limpar ficheiros compilados
-clean:
+clean: clean_outputs
 	rm -rf $(OBJ_DIR) $(TARGET) $(TEST_TARGET)
 
 # Limpar apenas os ficheiros gerados na pasta de resultados
