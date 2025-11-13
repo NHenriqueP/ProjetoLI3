@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "gestor_aeronave.h"
 
 static int parse_horario(const char *s, Horario *h) {
     if (!s || !h) return 0;
@@ -84,7 +85,7 @@ ParseResultado parse_voo_line(char **fields, int n_fields, SistemaGestor *gestor
     if (strcmp(origem, destino) == 0) {
         return r;
     }
-    if (!aircraft || strlen(aircraft) >= sizeof(((Voo*)0)->aircraft)) {
+    if (!aircraft || strlen(aircraft) >= sizeof(((Voo*)0)->aircraft) || !existe_aeronave(gestor_global_get_aeronaves(gestor), aircraft)) {
         return r;
     }
     if (!airline || strlen(airline) >= sizeof(((Voo*)0)->airline)) {

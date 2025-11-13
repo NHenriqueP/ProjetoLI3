@@ -9,6 +9,7 @@
 #include "gestorglobal.h"
 #include "gestor_voo.h"
 #include "voos.h"
+#include "gestor_passageiro.h"
 
 static int validar_reservation_id(const char *s) {
     if (!s || strlen(s) != 10) return 0;
@@ -134,7 +135,7 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor *ge
         return r;
     }
 
-    if (!document_number || strlen(document_number) == 0 || strlen(document_number) > 9) {
+    if (!document_number || strlen(document_number) == 0 || strlen(document_number) > 9 || !existe_document_number(gestor_global_get_passageiros(gestor), document_number)) {
         return r;
     }
     for (const char *p = document_number; *p; ++p) {

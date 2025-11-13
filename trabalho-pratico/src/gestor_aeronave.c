@@ -73,6 +73,11 @@ Aeronave* aeronave_ptr_manager_find_by_id(AeronavePtrManager *manager, const cha
     return g_hash_table_lookup(manager->by_id, id);
 }
 
+int existe_aeronave(AeronavePtrManager *manager, const char *id) {
+    if (!manager || !id) return 0;
+    return g_hash_table_contains(manager->by_id, id);
+}
+
 guint aeronave_ptr_manager_count(const AeronavePtrManager *manager) {
     if (!manager || !manager->aeronaves) return 0;
     return manager->aeronaves->len;

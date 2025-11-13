@@ -70,23 +70,6 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     );
     if (count_airports < 0) return 0;
 
-    if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "flights.csv")) return 0;
-    const char *erros_voos_rel = "resultados/flights_errors.csv";
-    l = strlen(erros_voos_rel);
-    if (l >= sizeof(caminho_erros)) return 0;
-    for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_voos_rel[i];
-    caminho_erros[l] = '\0';
-
-    int count_voos = csv_parser(
-        caminho_completo,
-        caminho_erros,
-        gestor_global_get_voos(gestor),
-        gestor,
-        parse_voo_line,
-        voo_ptr_manager_add_from_ptr_adapter,
-        ','
-    );
-    if (count_voos < 0) return 0;
 
     if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "aircrafts.csv")) return 0;
     const char *erros_aeronaves_rel = "resultados/aircrafts_errors.csv";
@@ -105,6 +88,24 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
         ','
     );
     if (count_aeronaves < 0) return 0;
+
+    if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "flights.csv")) return 0;
+    const char *erros_voos_rel = "resultados/flights_errors.csv";
+    l = strlen(erros_voos_rel);
+    if (l >= sizeof(caminho_erros)) return 0;
+    for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_voos_rel[i];
+    caminho_erros[l] = '\0';
+
+    int count_voos = csv_parser(
+        caminho_completo,
+        caminho_erros,
+        gestor_global_get_voos(gestor),
+        gestor,
+        parse_voo_line,
+        voo_ptr_manager_add_from_ptr_adapter,
+        ','
+    );
+    if (count_voos < 0) return 0;
 
     if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "passengers.csv")) return 0;
     const char *erros_passageiros_rel = "resultados/passengers_errors.csv";

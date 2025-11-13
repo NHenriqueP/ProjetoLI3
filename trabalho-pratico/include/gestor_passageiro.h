@@ -13,5 +13,6 @@ int passageiro_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entida
 Passageiro* passageiro_ptr_manager_find_by_doc(PassageiroPtrManager *manager, const char *document_number);
 guint passageiro_ptr_manager_count(const PassageiroPtrManager *manager);
 const Passageiro* passageiro_ptr_manager_get(const PassageiroPtrManager *manager, guint index);
+int existe_document_number(PassageiroPtrManager *manager, const char *document_number);
 
 #endif

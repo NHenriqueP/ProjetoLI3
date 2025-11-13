@@ -71,6 +71,11 @@ int passageiro_ptr_manager_add_from_ptr(PassageiroPtrManager *manager, Passageir
     return 1;
 }
 
+int existe_document_number(PassageiroPtrManager *manager, const char *document_number) {
+    if (!manager || !document_number) return 0;
+    return g_hash_table_contains(manager->by_doc, document_number);
+}
+
 int passageiro_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
     if (!gestor || !entidade) return 0;
     return passageiro_ptr_manager_add_from_ptr((PassageiroPtrManager*)gestor, (Passageiro*)entidade);
