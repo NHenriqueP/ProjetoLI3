@@ -14,7 +14,6 @@ struct passageiro_ptr_manager {
     GArray *passageiros; /* array de (Passageiro*) */
 };
 
-static PassageiroManager *mgr = NULL;
 
 static void free_passageiro(Passageiro *passageiro) {
     if (!passageiro) return;
@@ -49,15 +48,7 @@ PassageiroManager* passageiro_manager_create() {
     return manager;
 }
 
-void init_passageiro_manager() {
-    if (!mgr) {
-        mgr = passageiro_manager_create();
-    }
-}
 
-PassageiroManager* get_passageiro_manager() {
-    return mgr;
-}
 
 int passageiro_manager_add(PassageiroManager *manager, Passageiro passageiro) {
     if (!manager) return 0;
@@ -123,12 +114,7 @@ void passageiro_manager_destroy(PassageiroManager *manager) {
     free(manager);
 }
 
-void cleanup_passageiro_manager() {
-    if (mgr) {
-        passageiro_manager_destroy(mgr);
-        mgr = NULL;
-    }
-}
+
 
 PassageiroPtrManager* passageiro_ptr_manager_create() {
     PassageiroPtrManager *m = malloc(sizeof(PassageiroPtrManager));

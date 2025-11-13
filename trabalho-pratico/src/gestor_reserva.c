@@ -14,7 +14,6 @@ struct reserva_ptr_manager {
     GArray *reservas; /* array de (Reserva*) */
 };
 
-static ReservaManager *mgr = NULL;
 
 static void free_reserva(Reserva *reserva) {
     if (!reserva) return;
@@ -44,15 +43,8 @@ ReservaManager* reserva_manager_create() {
     return manager;
 }
 
-void init_reserva_manager() {
-    if (!mgr) {
-        mgr = reserva_manager_create();
-    }
-}
 
-ReservaManager* get_reserva_manager() {
-    return mgr;
-}
+
 
 int reserva_manager_add(ReservaManager *manager, Reserva reserva) {
     if (!manager) return 0;
@@ -118,12 +110,6 @@ void reserva_manager_destroy(ReservaManager *manager) {
     free(manager);
 }
 
-void cleanup_reserva_manager() {
-    if (mgr) {
-        reserva_manager_destroy(mgr);
-        mgr = NULL;
-    }
-}
 
 ReservaPtrManager* reserva_ptr_manager_create() {
     ReservaPtrManager *m = malloc(sizeof(ReservaPtrManager));

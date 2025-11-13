@@ -14,7 +14,6 @@ struct aeroporto_ptr_manager {
     GArray *airports; /* array of (Aeroporto*) */
 };
 
-static AeroportoManager *mgr = NULL;
 
 static void free_airport(Aeroporto *airport) {
     if (!airport) return;
@@ -47,15 +46,7 @@ AeroportoManager* airport_manager_create() {
     return manager;
 }
 
-void init_airport_manager() {
-    if (!mgr) {
-        mgr = airport_manager_create();
-    }
-}
 
-AeroportoManager* get_airport_manager() {
-    return mgr;
-}
 
 int airport_manager_add(AeroportoManager *manager, Aeroporto airport) {
     if (!manager) return 0;
@@ -109,12 +100,6 @@ void airport_manager_destroy(AeroportoManager *manager) {
     free(manager);
 }
 
-void cleanup_airport_manager() {
-    if (mgr) {
-        airport_manager_destroy(mgr);
-        mgr = NULL;
-    }
-}
 
 AeroportoPtrManager* airport_ptr_manager_create() {
     AeroportoPtrManager *m = malloc(sizeof(AeroportoPtrManager));

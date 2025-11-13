@@ -14,7 +14,6 @@ struct aeronave_ptr_manager {
     GArray *aeronaves; /* array de (Aeronave*) */
 };
 
-static AeronaveManager *mgr = NULL;
 
 static void free_aeronave(Aeronave *aeronave) {
     if (!aeronave) return;
@@ -42,15 +41,6 @@ AeronaveManager* aeronave_manager_create() {
     return manager;
 }
 
-void init_aeronave_manager() {
-    if (!mgr) {
-        mgr = aeronave_manager_create();
-    }
-}
-
-AeronaveManager* get_aeronave_manager() {
-    return mgr;
-}
 
 int aeronave_manager_add(AeronaveManager *manager, Aeronave aeronave) {
     if (!manager) return 0;
@@ -116,12 +106,6 @@ void aeronave_manager_destroy(AeronaveManager *manager) {
     free(manager);
 }
 
-void cleanup_aeronave_manager() {
-    if (mgr) {
-        aeronave_manager_destroy(mgr);
-        mgr = NULL;
-    }
-}
 
 AeronavePtrManager* aeronave_ptr_manager_create() {
     AeronavePtrManager *m = malloc(sizeof(AeronavePtrManager));
