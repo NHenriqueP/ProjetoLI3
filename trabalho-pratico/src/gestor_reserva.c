@@ -4,14 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct ReservaManager {
-    GHashTable *reservas_by_id;
-    GArray *reservas_list;
-    int count;
-};
-
 struct reserva_ptr_manager {
     GArray *reservas; /* array de (Reserva*) */
+    GHashTable *by_id;
 };
 
 
@@ -25,98 +20,15 @@ static void free_reserva(Reserva *reserva) {
     g_free(reserva->qr_code);
 }
 
-ReservaManager* reserva_manager_create() {
-    ReservaManager *manager = malloc(sizeof(ReservaManager));
-    if (!manager) return NULL;
-
-    manager->count = 0;
-    manager->reservas_by_id = g_hash_table_new(g_str_hash, g_str_equal);
-    manager->reservas_list = g_array_new(FALSE, FALSE, sizeof(Reserva*));
-
-    if (!manager->reservas_by_id || !manager->reservas_list) {
-        if (manager->reservas_by_id) g_hash_table_destroy(manager->reservas_by_id);
-        if (manager->reservas_list) g_array_free(manager->reservas_list, TRUE);
-        free(manager);
-        return NULL;
-    }
-
-    return manager;
-}
-
-
-
-
-int reserva_manager_add(ReservaManager *manager, Reserva reserva) {
-    if (!manager) return 0;
-
-    Reserva *new_reserva = g_new(Reserva, 1);
-    if (!new_reserva) return 0;
-
-    *new_reserva = reserva;
-
-    g_hash_table_insert(manager->reservas_by_id, new_reserva->reservation_id, new_reserva);
-    g_array_append_val(manager->reservas_list, new_reserva);
-
-    manager->count++;
-    return 1;
-}
-
-Reserva* reserva_manager_find_by_id(ReservaManager *manager, const char *reservation_id) {
-    if (!manager || !reservation_id) return NULL;
-    return (Reserva*)g_hash_table_lookup(manager->reservas_by_id, reservation_id);
-}
-
-Reserva* reserva_manager_find_by_document(ReservaManager *manager, const char *document_number) {
-    if (!manager || !manager->reservas_list || !document_number) return NULL;
-
-    for (guint i = 0; i < manager->reservas_list->len; i++) {
-        Reserva *r = g_array_index(manager->reservas_list, Reserva*, i);
-        if (r && r->document_number && strcmp(r->document_number, document_number) == 0) {
-            return r;
-        }
-    }
-    return NULL;
-}
-
-int reserva_exists_by_id(ReservaManager *manager, const char *reservation_id) {
-    if (!manager || !reservation_id) return 0;
-    return g_hash_table_contains(manager->reservas_by_id, reservation_id);
-}
-
-int reserva_manager_get_count(ReservaManager *manager) {
-    if (!manager) return 0;
-    return manager->count;
-}
-
-Reserva* reserva_manager_get_at_index(ReservaManager *manager, int index) {
-    if (!manager || index < 0 || index >= manager->count) return NULL;
-    return g_array_index(manager->reservas_list, Reserva*, index);
-}
-
-void reserva_manager_destroy(ReservaManager *manager) {
-    if (!manager) return;
-
-    for (guint i = 0; i < manager->reservas_list->len; i++) {
-        Reserva *r = g_array_index(manager->reservas_list, Reserva*, i);
-        if (r) {
-            free_reserva(r);
-            g_free(r);
-        }
-    }
-
-    g_hash_table_destroy(manager->reservas_by_id);
-    g_array_free(manager->reservas_list, TRUE);
-
-    free(manager);
-}
-
-
 ReservaPtrManager* reserva_ptr_manager_create() {
     ReservaPtrManager *m = malloc(sizeof(ReservaPtrManager));
     if (!m) return NULL;
 
     m->reservas = g_array_new(FALSE, FALSE, sizeof(Reserva*));
-    if (!m->reservas) {
+    m->by_id = g_hash_table_new(g_str_hash, g_str_equal);
+    if (!m->reservas || !m->by_id) {
+        if (m->reservas) g_array_free(m->reservas, TRUE);
+        if (m->by_id) g_hash_table_destroy(m->by_id);
         free(m);
         return NULL;
     }
@@ -138,12 +50,21 @@ void reserva_ptr_manager_destroy(ReservaPtrManager *manager) {
         g_array_free(manager->reservas, TRUE);
     }
 
+    if (manager->by_id) g_hash_table_destroy(manager->by_id);
+
     free(manager);
 }
 
 int reserva_ptr_manager_add_from_ptr(ReservaPtrManager *manager, Reserva *entidade) {
     if (!manager || !entidade) return 0;
+    if (manager->by_id && g_hash_table_lookup(manager->by_id, entidade->reservation_id)) {
+        free_reserva(entidade);
+        g_free(entidade);
+        return 1;
+    }
+
     g_array_append_val(manager->reservas, entidade);
+    g_hash_table_insert(manager->by_id, entidade->reservation_id, entidade);
     return 1;
 }
 
@@ -153,12 +74,29 @@ int reserva_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade)
 }
 
 Reserva* reserva_ptr_manager_find_by_id(ReservaPtrManager *manager, const char *reservation_id) {
-    if (!manager || !manager->reservas || !reservation_id) return NULL;
+    if (!manager || !manager->by_id || !reservation_id) return NULL;
+    return g_hash_table_lookup(manager->by_id, reservation_id);
+}
+
+Reserva* reserva_ptr_manager_find_by_document(ReservaPtrManager *manager, const char *document_number) {
+    if (!manager || !manager->reservas || !document_number) return NULL;
 
     for (guint i = 0; i < manager->reservas->len; i++) {
         Reserva *r = g_array_index(manager->reservas, Reserva*, i);
-        if (r && r->reservation_id && strcmp(r->reservation_id, reservation_id) == 0) return r;
+        if (r && r->document_number && strcmp(r->document_number, document_number) == 0) {
+            return r;
+        }
     }
 
     return NULL;
+}
+
+guint reserva_ptr_manager_count(const ReservaPtrManager *manager) {
+    if (!manager || !manager->reservas) return 0;
+    return manager->reservas->len;
+}
+
+const Reserva* reserva_ptr_manager_get(const ReservaPtrManager *manager, guint index) {
+    if (!manager || !manager->reservas || index >= manager->reservas->len) return NULL;
+    return g_array_index(manager->reservas, Reserva*, index);
 }

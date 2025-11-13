@@ -4,16 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct PassageiroManager {
-    GHashTable *passageiros_by_doc;
-    GArray *passageiros_list;
-    int count;
-};
-
 struct passageiro_ptr_manager {
     GArray *passageiros; /* array de (Passageiro*) */
+    GHashTable *by_doc;
 };
-
 
 static void free_passageiro(Passageiro *passageiro) {
     if (!passageiro) return;
@@ -30,98 +24,15 @@ static void free_passageiro(Passageiro *passageiro) {
     g_free(passageiro->photo);
 }
 
-PassageiroManager* passageiro_manager_create() {
-    PassageiroManager *manager = malloc(sizeof(PassageiroManager));
-    if (!manager) return NULL;
-
-    manager->count = 0;
-    manager->passageiros_by_doc = g_hash_table_new(g_str_hash, g_str_equal);
-    manager->passageiros_list = g_array_new(FALSE, FALSE, sizeof(Passageiro*));
-
-    if (!manager->passageiros_by_doc || !manager->passageiros_list) {
-        if (manager->passageiros_by_doc) g_hash_table_destroy(manager->passageiros_by_doc);
-        if (manager->passageiros_list) g_array_free(manager->passageiros_list, TRUE);
-        free(manager);
-        return NULL;
-    }
-
-    return manager;
-}
-
-
-
-int passageiro_manager_add(PassageiroManager *manager, Passageiro passageiro) {
-    if (!manager) return 0;
-
-    Passageiro *new_passageiro = g_new(Passageiro, 1);
-    if (!new_passageiro) return 0;
-
-    *new_passageiro = passageiro;
-
-    g_hash_table_insert(manager->passageiros_by_doc, new_passageiro->document_number, new_passageiro);
-    g_array_append_val(manager->passageiros_list, new_passageiro);
-
-    manager->count++;
-    return 1;
-}
-
-Passageiro* passageiro_manager_find_by_doc(PassageiroManager *manager, const char *document_number) {
-    if (!manager || !document_number) return NULL;
-    return (Passageiro*)g_hash_table_lookup(manager->passageiros_by_doc, document_number);
-}
-
-Passageiro* passageiro_manager_find_by_email(PassageiroManager *manager, const char *email) {
-    if (!manager || !manager->passageiros_list || !email) return NULL;
-
-    for (guint i = 0; i < manager->passageiros_list->len; i++) {
-        Passageiro *p = g_array_index(manager->passageiros_list, Passageiro*, i);
-        if (p && p->email && strcmp(p->email, email) == 0) {
-            return p;
-        }
-    }
-    return NULL;
-}
-
-int passageiro_exists_by_doc(PassageiroManager *manager, const char *document_number) {
-    if (!manager || !document_number) return 0;
-    return g_hash_table_contains(manager->passageiros_by_doc, document_number);
-}
-
-int passageiro_manager_get_count(PassageiroManager *manager) {
-    if (!manager) return 0;
-    return manager->count;
-}
-
-Passageiro* passageiro_manager_get_at_index(PassageiroManager *manager, int index) {
-    if (!manager || index < 0 || index >= manager->count) return NULL;
-    return g_array_index(manager->passageiros_list, Passageiro*, index);
-}
-
-void passageiro_manager_destroy(PassageiroManager *manager) {
-    if (!manager) return;
-
-    for (guint i = 0; i < manager->passageiros_list->len; i++) {
-        Passageiro *p = g_array_index(manager->passageiros_list, Passageiro*, i);
-        if (p) {
-            free_passageiro(p);
-            g_free(p);
-        }
-    }
-
-    g_hash_table_destroy(manager->passageiros_by_doc);
-    g_array_free(manager->passageiros_list, TRUE);
-
-    free(manager);
-}
-
-
-
 PassageiroPtrManager* passageiro_ptr_manager_create() {
     PassageiroPtrManager *m = malloc(sizeof(PassageiroPtrManager));
     if (!m) return NULL;
 
     m->passageiros = g_array_new(FALSE, FALSE, sizeof(Passageiro*));
-    if (!m->passageiros) {
+    m->by_doc = g_hash_table_new(g_str_hash, g_str_equal);
+    if (!m->passageiros || !m->by_doc) {
+        if (m->passageiros) g_array_free(m->passageiros, TRUE);
+        if (m->by_doc) g_hash_table_destroy(m->by_doc);
         free(m);
         return NULL;
     }
@@ -143,12 +54,20 @@ void passageiro_ptr_manager_destroy(PassageiroPtrManager *manager) {
         g_array_free(manager->passageiros, TRUE);
     }
 
+    if (manager->by_doc) g_hash_table_destroy(manager->by_doc);
+
     free(manager);
 }
 
 int passageiro_ptr_manager_add_from_ptr(PassageiroPtrManager *manager, Passageiro *entidade) {
     if (!manager || !entidade) return 0;
+    if (manager->by_doc && g_hash_table_lookup(manager->by_doc, entidade->document_number)) {
+        free_passageiro(entidade);
+        g_free(entidade);
+        return 1;
+    }
     g_array_append_val(manager->passageiros, entidade);
+    g_hash_table_insert(manager->by_doc, entidade->document_number, entidade);
     return 1;
 }
 
@@ -158,12 +77,16 @@ int passageiro_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entida
 }
 
 Passageiro* passageiro_ptr_manager_find_by_doc(PassageiroPtrManager *manager, const char *document_number) {
-    if (!manager || !manager->passageiros || !document_number) return NULL;
+    if (!manager || !manager->by_doc || !document_number) return NULL;
+    return g_hash_table_lookup(manager->by_doc, document_number);
+}
 
-    for (guint i = 0; i < manager->passageiros->len; i++) {
-        Passageiro *p = g_array_index(manager->passageiros, Passageiro*, i);
-        if (p && p->document_number && strcmp(p->document_number, document_number) == 0) return p;
-    }
+guint passageiro_ptr_manager_count(const PassageiroPtrManager *manager) {
+    if (!manager || !manager->passageiros) return 0;
+    return manager->passageiros->len;
+}
 
-    return NULL;
+const Passageiro* passageiro_ptr_manager_get(const PassageiroPtrManager *manager, guint index) {
+    if (!manager || !manager->passageiros || index >= manager->passageiros->len) return NULL;
+    return g_array_index(manager->passageiros, Passageiro*, index);
 }

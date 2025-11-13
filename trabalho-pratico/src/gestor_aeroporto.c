@@ -4,16 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct AeroportoManager {
-    GHashTable *airports_by_iata;  // Hash table para busca por IATA
-    GArray *airports_list;         // Array para iteração
-    int count;
-};
-
 struct aeroporto_ptr_manager {
     GArray *airports; /* array of (Aeroporto*) */
+    GHashTable *by_iata;
 };
-
 
 static void free_airport(Aeroporto *airport) {
     if (!airport) return;
@@ -28,85 +22,15 @@ static void free_airport(Aeroporto *airport) {
     g_free(airport->tipo);
 }
 
-AeroportoManager* airport_manager_create() {
-    AeroportoManager *manager = malloc(sizeof(AeroportoManager));
-    if (!manager) return NULL;
-
-    manager->count = 0;
-    manager->airports_by_iata = g_hash_table_new(g_str_hash, g_str_equal);
-    manager->airports_list = g_array_new(FALSE, FALSE, sizeof(Aeroporto*));
-
-    if (!manager->airports_by_iata || !manager->airports_list) {
-        if (manager->airports_by_iata) g_hash_table_destroy(manager->airports_by_iata);
-        if (manager->airports_list) g_array_free(manager->airports_list, TRUE);
-        free(manager);
-        return NULL;
-    }
-
-    return manager;
-}
-
-
-
-int airport_manager_add(AeroportoManager *manager, Aeroporto airport) {
-    if (!manager) return 0;
-
-    Aeroporto *new_airport = g_new(Aeroporto, 1);
-    if (!new_airport) return 0;
-
-    *new_airport = airport;
-
-    g_hash_table_insert(manager->airports_by_iata, new_airport->iata, new_airport);
-    g_array_append_val(manager->airports_list, new_airport);
-
-    manager->count++;
-    return 1;
-}
-
-Aeroporto* airport_manager_find_by_iata(AeroportoManager *manager, const char *iata) {
-    if (!manager || !iata) return NULL;
-    return (Aeroporto*)g_hash_table_lookup(manager->airports_by_iata, iata);
-}
-
-int airport_exists_by_iata(AeroportoManager *manager, const char *iata) {
-    if (!manager || !iata) return 0;
-    return g_hash_table_contains(manager->airports_by_iata, iata);
-}
-
-int airport_manager_get_count(AeroportoManager *manager) {
-    if (!manager) return 0;
-    return manager->count;
-}
-
-Aeroporto* airport_manager_get_at_index(AeroportoManager *manager, int index) {
-    if (!manager || index < 0 || index >= manager->count) return NULL;
-    return g_array_index(manager->airports_list, Aeroporto*, index);
-}
-
-void airport_manager_destroy(AeroportoManager *manager) {
-    if (!manager) return;
-
-    for (guint i = 0; i < manager->airports_list->len; i++) {
-        Aeroporto *a = g_array_index(manager->airports_list, Aeroporto*, i);
-        if (a) {
-            free_airport(a);
-            g_free(a);
-        }
-    }
-
-    g_hash_table_destroy(manager->airports_by_iata);
-    g_array_free(manager->airports_list, TRUE);
-
-    free(manager);
-}
-
-
 AeroportoPtrManager* airport_ptr_manager_create() {
     AeroportoPtrManager *m = malloc(sizeof(AeroportoPtrManager));
     if (!m) return NULL;
 
     m->airports = g_array_new(FALSE, FALSE, sizeof(Aeroporto*));
-    if (!m->airports) {
+    m->by_iata = g_hash_table_new(g_str_hash, g_str_equal);
+    if (!m->airports || !m->by_iata) {
+        if (m->airports) g_array_free(m->airports, TRUE);
+        if (m->by_iata) g_hash_table_destroy(m->by_iata);
         free(m);
         return NULL;
     }
@@ -128,12 +52,20 @@ void airport_ptr_manager_destroy(AeroportoPtrManager *manager) {
         g_array_free(manager->airports, TRUE);
     }
 
+    if (manager->by_iata) g_hash_table_destroy(manager->by_iata);
+
     free(manager);
 }
 
 int airport_ptr_manager_add_from_ptr(AeroportoPtrManager *manager, Aeroporto *entidade) {
     if (!manager || !entidade) return 0;
+    if (manager->by_iata && g_hash_table_lookup(manager->by_iata, entidade->iata)) {
+        free_airport(entidade);
+        g_free(entidade);
+        return 1;
+    }
     g_array_append_val(manager->airports, entidade);
+    g_hash_table_insert(manager->by_iata, entidade->iata, entidade);
     return 1;
 }
 
@@ -142,13 +74,17 @@ int airport_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade)
     return airport_ptr_manager_add_from_ptr((AeroportoPtrManager*)gestor, (Aeroporto*)entidade);
 }
 
+guint airport_ptr_manager_count(const AeroportoPtrManager *manager) {
+    if (!manager || !manager->airports) return 0;
+    return manager->airports->len;
+}
+
+const Aeroporto* airport_ptr_manager_get(const AeroportoPtrManager *manager, guint index) {
+    if (!manager || !manager->airports || index >= manager->airports->len) return NULL;
+    return g_array_index(manager->airports, Aeroporto*, index);
+}
+
 Aeroporto* airport_ptr_manager_find_by_iata(AeroportoPtrManager *manager, const char *iata) {
-    if (!manager || !manager->airports || !iata) return NULL;
-
-    for (guint i = 0; i < manager->airports->len; i++) {
-        Aeroporto *a = g_array_index(manager->airports, Aeroporto*, i);
-        if (a && a->iata && strcmp(a->iata, iata) == 0) return a;
-    }
-
-    return NULL;
+    if (!manager || !manager->by_iata || !iata) return NULL;
+    return g_hash_table_lookup(manager->by_iata, iata);
 }
