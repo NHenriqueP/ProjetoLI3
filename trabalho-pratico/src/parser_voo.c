@@ -29,7 +29,7 @@ static int comparar_horario(const Horario *a, const Horario *b) {
 static int parse_horario_optional(const char *s, Horario *h, int *tem_valor) {
     if (!h || !tem_valor || !s) return 0;
     if (s[0] == '\0') return 0;
-    if (g_ascii_strcasecmp(s, "N/A") == 0 || g_ascii_strcasecmp(s, "NA") == 0) {
+    if (g_ascii_strcasecmp(s, "N/A") == 0) {
         *h = (Horario){0};
         *tem_valor = 0;
         return 1;
@@ -116,17 +116,36 @@ ParseResultado parse_voo_line(char **fields, int n_fields, SistemaGestor *gestor
     if (!parse_horario_optional(act_arr_str, &act_arr, &tem_act_arr)) {
         return r;
     }
+    
+    int ok_status = 0;
+    Status st = parse_status(status_str, &ok_status);
+    if (!ok_status) {
+        return r;
+    }
+
+
+    if (st == CANCELLED) {
+        if (tem_act_dep || tem_act_arr) {
+            return r;
+        }
+    }
+    
+    else if (st == DELAYED) {
+        if (tem_act_dep && comparar_horario(&act_dep, &dep) < 0) {
+            return r; // Partiu ANTES da hora
+        }
+        if (tem_act_arr && comparar_horario(&act_arr, &arr) < 0) {
+            return r; // Chegou ANTES da hora
+        }
+    }
+    
+
     if (!tem_act_dep) act_dep = dep;
     if (!tem_act_arr) act_arr = arr;
     if (tem_act_dep && tem_act_arr && comparar_horario(&act_arr, &act_dep) <= 0) {
         return r;
     }
 
-    int ok_status = 0;
-    Status st = parse_status(status_str, &ok_status);
-    if (!ok_status) {
-        return r;
-    }
 
     Voo *v = g_new0(Voo, 1);
     if (!v) {
