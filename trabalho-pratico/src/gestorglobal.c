@@ -1,15 +1,10 @@
 // Implementação do gestor global (estrutura opaca)
 #include <stdlib.h>
 #include "gestorglobal.h"
-#include "aeroportos.h"
 #include "gestor_aeroporto.h"
-#include "voos.h"
 #include "gestor_voo.h"
-#include "aeronaves.h"
 #include "gestor_aeronave.h"
-#include "passageiros.h"
 #include "gestor_passageiro.h"
-#include "reservas.h"
 #include "gestor_reserva.h"
 
 // Definição interna da estrutura opaca declarada em gestorglobal.h

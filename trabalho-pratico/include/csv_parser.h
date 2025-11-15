@@ -9,30 +9,11 @@ typedef struct parse_resultado {
     void *entidade;
 } ParseResultado;
 
-// Função que vai dar ao gestor x a entidade correspondente
-typedef int (*GestorAddFunc)(void *gestor, const void *entidade);
-
-// Função parser de linha: recebe campos/n_campos e devolve ParseResultado
-typedef ParseResultado (*LinhaParser)(char **fields, int n_fields, SistemaGestor *gestor);
-
-// Função principal do parser genérico de CSV.
-// Retorna o número de linhas válidas adicionadas ao gestor.
-int csv_parser(
-    const char *caminho_csv,
-    const char *ficheiro_erros,
-    void *gestor,
-    void *gestorGlob,
-    LinhaParser parser_func,
-    GestorAddFunc add_func,
-    char separador
+int csv_split_quoted(
+    char *s,//linha que se transforma em tokens
+    char sep,// o separador entre os tokens é a ','
+    char **out,//array onde ficam os ponteiros para o inicio de cada campo; ex: iaca
+    int max_out//número máximo de carateres
 );
-
-// Validadores auxiliares expostos (úteis para outros módulos)
-int validar_iata(const char *s);
-int validar_icao(const char *s);
-int validar_latitude(const char *s);
-int validar_longitude(const char *s);
-int tipo_aeroporto_valido(char *tipo);
-
 
 #endif

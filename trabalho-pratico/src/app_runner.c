@@ -1,8 +1,6 @@
 #include "app_runner.h"
 
-#include "aeronaves.h"
 #include "gestor_aeronave.h"
-#include "aeroportos.h"
 #include "gestor_aeroporto.h"
 #include "csv_parser.h"
 #include "parser_aeroporto.h"
@@ -11,14 +9,11 @@
 #include "parser_passageiro.h"
 #include "parser_reserva.h"
 #include "gestorglobal.h"
-#include "passageiros.h"
 #include "gestor_passageiro.h"
 #include "querie1.h"
 #include "querie2.h"
 #include "querie3.h"
-#include "reservas.h"
 #include "gestor_reserva.h"
-#include "voos.h"
 #include "gestor_voo.h"
 
 #include <stdio.h>
@@ -59,13 +54,10 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_rel[i];
     caminho_erros[l] = '\0';
 
-    int count_airports = csv_parser(
+    int count_airports = csv_parser_airports(
         caminho_completo,
         caminho_erros,
         gestor_global_get_aeroportos(gestor),
-        gestor,
-        parse_airport_line,
-        airport_ptr_manager_add_from_ptr_adapter,
         ','
     );
     if (count_airports < 0) return 0;
@@ -78,13 +70,10 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_aeronaves_rel[i];
     caminho_erros[l] = '\0';
 
-    int count_aeronaves = csv_parser(
+    int count_aeronaves = csv_parser_aeronaves(
         caminho_completo,
         caminho_erros,
         gestor_global_get_aeronaves(gestor),
-        gestor,
-        parse_aeronave_line,
-        aeronave_ptr_manager_add_from_ptr_adapter,
         ','
     );
     if (count_aeronaves < 0) return 0;
@@ -96,13 +85,11 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_voos_rel[i];
     caminho_erros[l] = '\0';
 
-    int count_voos = csv_parser(
+    int count_voos = csv_parser_voos(
         caminho_completo,
         caminho_erros,
         gestor_global_get_voos(gestor),
         gestor,
-        parse_voo_line,
-        voo_ptr_manager_add_from_ptr_adapter,
         ','
     );
     if (count_voos < 0) return 0;
@@ -114,13 +101,10 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_passageiros_rel[i];
     caminho_erros[l] = '\0';
 
-    int count_passageiros = csv_parser(
+    int count_passageiros = csv_parser_passageiros(
         caminho_completo,
         caminho_erros,
         gestor_global_get_passageiros(gestor),
-        gestor,
-        parse_passageiro_line,
-        passageiro_ptr_manager_add_from_ptr_adapter,
         ','
     );
     if (count_passageiros < 0) return 0;
@@ -132,13 +116,11 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     for (size_t i = 0; i < l; i++) caminho_erros[i] = erros_reservas_rel[i];
     caminho_erros[l] = '\0';
 
-    int count_reservas = csv_parser(
+    int count_reservas = csv_parser_reservas(
         caminho_completo,
         caminho_erros,
         gestor_global_get_reservas(gestor),
         gestor,
-        parse_reserva_line,
-        reserva_ptr_manager_add_from_ptr_adapter,
         ','
     );
     if (count_reservas < 0) return 0;

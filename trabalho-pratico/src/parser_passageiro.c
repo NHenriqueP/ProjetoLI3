@@ -3,6 +3,8 @@
 #include <ctype.h>
 #include <glib.h>
 #include <string.h>
+#include <stdio.h>
+#include <csv_parser.h>
 
 static int validar_document_number(const char *s, size_t len) {
     if (!s || len != 9) return 0;
@@ -48,12 +50,11 @@ static int validar_email(const char *s) {
     return tem_arroba && tem_ponto_depois_arroba;
 }
 
-ParseResultado parse_passageiro_line(char **fields, int n_fields, SistemaGestor *gestor) {
+ParseResultado parse_passageiro_line(char **fields, int n_fields) {
     ParseResultado r;
     r.valido = false;
     r.entidade = NULL;
 
-    (void)gestor;
 
     if (n_fields < 10) {
         return r;
@@ -198,4 +199,98 @@ ParseResultado parse_passageiro_line(char **fields, int n_fields, SistemaGestor 
     r.valido = true;
     r.entidade = p;
     return r;
+}
+
+int csv_parser_passageiros(
+    const char *caminho_csv,       // Caminho do ficheiro a ler
+    const char *ficheiro_erros,    // Caminho para o ficheiro de erros
+    void *gestor,                  // Ponteiro para o gestor       // Função que faz o parsing da linha
+    char separador                 // Separador CSV: ','
+) {
+    FILE *ficheiro = fopen(caminho_csv, "r");
+    if (!ficheiro) {
+        fputs("Erro ao abrir ficheiro '", stderr);
+        fputs(caminho_csv ? caminho_csv : "<NULL>", stderr);
+        fputs("': ", stderr);//fecha a aspa e separa.
+        fputs(strerror(errno), stderr);
+        fputc('\n', stderr);
+        return 0;
+    }
+
+    FILE *ficheiro_erros_ptr = NULL;
+    char *linha = NULL;
+    // getline() usa size_t para o tamanho  por isso o uso do size_t 
+    size_t tam = 0;
+    // 'lida' guarda o resultado de getline(): número de bytes lidos ou -1 em EOF/erro.
+    // getline() retorna ssize_t (signed) para poder indicar -1, por isso usamos ssize_t.
+    ssize_t lida;
+    char *header = NULL;
+    bool header_lido = false;
+    int contador_validos = 0;
+
+    while ((lida = getline(&linha, &tam, ficheiro)) != -1) {
+        // Preservar a linha original (incluindo terminadores de linha) para o ficheiro de erros
+        size_t original_len = (size_t)lida;
+        char *linha_original = g_strndup(linha, original_len);
+
+        if (header_lido) {
+        // Remover \n e \r para efeitos de parsing (sem afetar o comprimento usado para escrever no ficheiro de erros)
+        while (lida > 0 && (linha[lida - 1] == '\n' || linha[lida - 1] == '\r')) // \r serve para compatibilidade com Windows
+            linha[--lida] = '\0';
+        }
+        // Guardar o cabeçalho (primeira linha) e continuar
+        if (!header_lido) {
+            header = g_strdup(linha);
+            header_lido = true;
+            // já não precisamos da cópia da linha original nesta iteração
+            g_free(linha_original);
+            continue;
+        }
+
+        // Dividir linha em campos (suporta aspas e vírgulas dentro de aspas)
+        char *fields[15];
+        int max_fields = 15;
+        int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
+
+        // Validar linha com o parser específico fornecido
+        ParseResultado resultado = parse_passageiro_line(fields, n_fields);
+
+        if (!resultado.valido) {
+            // Cria o ficheiro de erros se ainda não existir
+            if (!ficheiro_erros_ptr) {
+                ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
+                fwrite(header, 1, strlen(header), ficheiro_erros_ptr);
+                if (!ficheiro_erros_ptr) {
+                    fputs("Erro ao criar ficheiro de erros: ", stderr);
+                    fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
+                    fputc('\n', stderr);
+                    g_free(linha_original);
+                    break;
+                }
+            }
+            // Escreve a linha inválida exatamente como lida (com terminadores originais)
+            if (linha_original) {
+                fwrite(linha_original, 1, original_len, ficheiro_erros_ptr);
+            } else {
+                // fallback: escreve versão já normalizada
+                fputs(linha, ficheiro_erros_ptr);
+                fputc('\n', ficheiro_erros_ptr);
+            }
+        } else {
+            // Adiciona entidade válida ao gestor
+            passageiro_ptr_manager_add_from_ptr_adapter(gestor, resultado.entidade);
+            contador_validos++;
+        }
+
+        // libertar cópia da linha
+        g_free(linha_original);
+    }
+
+    // Fechar e libertar tudo
+    if (ficheiro_erros_ptr) fclose(ficheiro_erros_ptr);
+    g_free(header);
+    free(linha);
+    fclose(ficheiro);
+
+    return contador_validos;
 }

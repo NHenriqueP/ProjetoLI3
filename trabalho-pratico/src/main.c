@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "app_runner.h"
 #include "gestorglobal.h"
 
