@@ -11,6 +11,7 @@
 #include "gestor_voo.h"
 #include "voos.h"
 #include "gestor_passageiro.h"
+#include "gestor_reserva.h"
 #include "csv_parser.h"
 
 static int validar_reservation_id(const char *s) {
@@ -111,10 +112,9 @@ static int processar_e_validar_flights(const char *flight_ids_str, SistemaGestor
     return 1;
 }
 
-ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor *gestor) {
-    ParseResultado r;
-    r.valido = false;
-    r.entidade = NULL;
+ParseResultado* parse_reserva_line(char **fields, int n_fields, SistemaGestor *gestor) {
+    ParseResultado *r = parse_resultado_create();
+    if (!r) return NULL;
 
     if (n_fields < 8) {
         return r;
@@ -141,7 +141,7 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor *ge
         return r;
     }
     for (const char *p = document_number; *p; ++p) {
-        if (!isdigit((unsigned char)*p)) return r;
+    if (!isdigit((unsigned char)*p)) return r;
     }
 
     if (!validar_seat(seat)) {
@@ -163,32 +163,19 @@ ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor *ge
         return r;
     }
 
-    Reserva *res = g_new0(Reserva, 1);
+    Reserva *res = reserva_create(reservation_id,
+                                 flight_ids,
+                                 document_number,
+                                 seat,
+                                 price,
+                                 extra_luggage,
+                                 priority_boarding,
+                                 qr_code);
     if (!res) {
         return r;
     }
 
-    res->reservation_id = g_strdup(reservation_id);
-    res->flight_ids = g_strdup(flight_ids);
-    res->document_number = g_strdup(document_number);
-    res->seat = g_strdup(seat);
-    res->price = price;
-    res->extra_luggage = extra_luggage;
-    res->priority_boarding = priority_boarding;
-    res->qr_code = g_strdup(qr_code ? qr_code : "");
-
-    if (!res->reservation_id || !res->flight_ids || !res->document_number || !res->seat || !res->qr_code) {
-        g_free(res->reservation_id);
-        g_free(res->flight_ids);
-        g_free(res->document_number);
-        g_free(res->seat);
-        g_free(res->qr_code);
-        g_free(res);
-        return r;
-    }
-
-    r.valido = true;
-    r.entidade = res;
+    parse_resultado_mark_valid(r, res);
     return r;
 }
 
@@ -245,9 +232,9 @@ int csv_parser_reservas(
         int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
 
         // Validar linha com o parser específico fornecido
-        ParseResultado resultado = parse_reserva_line(fields, n_fields, gestorGlob);
+        ParseResultado *resultado = parse_reserva_line(fields, n_fields, gestorGlob);
 
-        if (!resultado.valido) {
+        if (!resultado || !parse_resultado_is_valid(resultado)) {
             // Cria o ficheiro de erros se ainda não existir
             if (!ficheiro_erros_ptr) {
                 ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
@@ -256,6 +243,7 @@ int csv_parser_reservas(
                     fputs("Erro ao criar ficheiro de erros: ", stderr);
                     fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
                     fputc('\n', stderr);
+                    if (resultado) parse_resultado_destroy(resultado);
                     g_free(linha_original);
                     break;
                 }
@@ -268,10 +256,12 @@ int csv_parser_reservas(
                 fputs(linha, ficheiro_erros_ptr);
                 fputc('\n', ficheiro_erros_ptr);
             }
+            if (resultado) parse_resultado_destroy(resultado);
         } else {
             // Adiciona entidade válida ao gestor
-            reserva_ptr_manager_add_from_ptr_adapter(gestor, resultado.entidade);
+            reserva_ptr_manager_add_from_ptr_adapter(gestor, parse_resultado_get_entidade(resultado));
             contador_validos++;
+            parse_resultado_destroy(resultado);
         }
 
         // libertar cópia da linha

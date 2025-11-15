@@ -1,5 +1,43 @@
 #include <stddef.h>
+#include <stdlib.h>
+
 #include "csv_parser.h"
+
+struct ParseResultado {
+    bool valido;
+    void *entidade;
+};
+
+ParseResultado* parse_resultado_create(void) {
+    ParseResultado *resultado = malloc(sizeof(ParseResultado));
+    if (!resultado) return NULL;
+
+    resultado->valido = false;
+    resultado->entidade = NULL;
+    return resultado;
+}
+
+void parse_resultado_mark_valid(ParseResultado *resultado, void *entidade) {
+    if (!resultado) return;
+
+    resultado->valido = true;
+    resultado->entidade = entidade;
+}
+
+bool parse_resultado_is_valid(const ParseResultado *resultado) {
+    if (!resultado) return false;
+    return resultado->valido;
+}
+
+void* parse_resultado_get_entidade(const ParseResultado *resultado) {
+    if (!resultado) return NULL;
+    return resultado->entidade;
+}
+
+void parse_resultado_destroy(ParseResultado *resultado) {
+    if (!resultado) return;
+    free(resultado);
+}
 
 
 int csv_split_quoted(

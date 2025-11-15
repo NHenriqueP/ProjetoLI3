@@ -3,8 +3,9 @@
 
 #include "csv_parser.h"
 #include "reservas.h"
+#include "gestorglobal.h"
 
-ParseResultado parse_reserva_line(char **fields, int n_fields, SistemaGestor *gestor);
+ParseResultado* parse_reserva_line(char **fields, int n_fields, SistemaGestor *gestor);
 
 int csv_parser_reservas(
     const char *caminho_csv,

@@ -2,10 +2,10 @@
 
 #include <glib.h>
 #include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
+ #include <ctype.h>
 #include <stdio.h>
 #include "csv_parser.h"
+#include "gestor_aeroporto.h"
 
 int verifica_coordenadas(const char *s, int digitos_max) {
     if (!s || *s == '\0') return 0;
@@ -75,10 +75,9 @@ int validar_icao(const char *s) {
     return 1;
 }
 
-ParseResultado parse_airport_line(char **fields, int n_fields) {
-    ParseResultado r;
-    r.valido = false;
-    r.entidade = NULL;
+ParseResultado* parse_airport_line(char **fields, int n_fields) {
+    ParseResultado *r = parse_resultado_create();
+    if (!r) return NULL;
 
     if (n_fields < 8) {
         return r;
@@ -109,36 +108,19 @@ ParseResultado parse_airport_line(char **fields, int n_fields) {
         return r;
     }
 
-    Aeroporto *a = g_new0(Aeroporto, 1);
+    Aeroporto *a = aeroporto_create(iata,
+                                    nome,
+                                    cidade,
+                                    pais,
+                                    latitude,
+                                    longitude,
+                                    icao,
+                                    tipo);
     if (!a) {
         return r;
     }
 
-    a->iata      = g_strdup(iata);
-    a->nome      = g_strdup(nome);
-    a->cidade    = g_strdup(cidade);
-    a->pais      = g_strdup(pais);
-    a->latitude  = g_strdup(latitude);
-    a->longitude = g_strdup(longitude);
-    a->icao      = g_strdup(icao);
-    a->tipo      = g_strdup(tipo);
-
-    if (!a->iata || !a->nome || !a->cidade || !a->pais ||
-        !a->latitude || !a->longitude || !a->icao || !a->tipo) {
-        g_free(a->iata);
-        g_free(a->nome);
-        g_free(a->cidade);
-        g_free(a->pais);
-        g_free(a->latitude);
-        g_free(a->longitude);
-        g_free(a->icao);
-        g_free(a->tipo);
-        g_free(a);
-        return r;
-    }
-
-    r.valido = true;
-    r.entidade = a;
+    parse_resultado_mark_valid(r, a);
     return r;
 }
 
@@ -194,9 +176,9 @@ int csv_parser_airports(
         int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
 
         // Validar linha com o parser específico fornecido
-        ParseResultado resultado = parse_airport_line(fields, n_fields);
+        ParseResultado *resultado = parse_airport_line(fields, n_fields);
 
-        if (!resultado.valido) {
+        if (!resultado || !parse_resultado_is_valid(resultado)) {
             // Cria o ficheiro de erros se ainda não existir
             if (!ficheiro_erros_ptr) {
                 ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
@@ -205,6 +187,7 @@ int csv_parser_airports(
                     fputs("Erro ao criar ficheiro de erros: ", stderr);
                     fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
                     fputc('\n', stderr);
+                    if (resultado) parse_resultado_destroy(resultado);
                     g_free(linha_original);
                     break;
                 }
@@ -217,10 +200,12 @@ int csv_parser_airports(
                 fputs(linha, ficheiro_erros_ptr);
                 fputc('\n', ficheiro_erros_ptr);
             }
+            if (resultado) parse_resultado_destroy(resultado);
         } else {
             // Adiciona entidade válida ao gestor
-            airport_ptr_manager_add_from_ptr_adapter(gestor, resultado.entidade);
+            airport_ptr_manager_add_from_ptr_adapter(gestor, parse_resultado_get_entidade(resultado));
             contador_validos++;
+            parse_resultado_destroy(resultado);
         }
 
         // libertar cópia da linha

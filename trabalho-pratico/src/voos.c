@@ -34,4 +34,3 @@ int validar_flight_id(const char *s) {
 	return 1;
 
 }
-// Parser movido para parser_voo.c

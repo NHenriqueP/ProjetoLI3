@@ -8,17 +8,6 @@ struct reserva_ptr_manager {
     GHashTable *by_id;
 };
 
-
-static void free_reserva(Reserva *reserva) {
-    if (!reserva) return;
-
-    g_free(reserva->reservation_id);
-    g_free(reserva->flight_ids);
-    g_free(reserva->document_number);
-    g_free(reserva->seat);
-    g_free(reserva->qr_code);
-}
-
 ReservaPtrManager* reserva_ptr_manager_create() {
     ReservaPtrManager *m = malloc(sizeof(ReservaPtrManager));
     if (!m) return NULL;
@@ -42,8 +31,7 @@ void reserva_ptr_manager_destroy(ReservaPtrManager *manager) {
         for (guint i = 0; i < manager->reservas->len; i++) {
             Reserva *r = g_array_index(manager->reservas, Reserva*, i);
             if (r) {
-                free_reserva(r);
-                g_free(r);
+                reserva_destroy(r);
             }
         }
         g_array_free(manager->reservas, TRUE);
@@ -58,13 +46,13 @@ int reserva_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade)
     if (!gestor || !entidade) return 0;
     ReservaPtrManager *manager = (ReservaPtrManager*)gestor;
     Reserva *reserva = (Reserva*)entidade;
-    if (manager->by_id && g_hash_table_lookup(manager->by_id, reserva->reservation_id)) {
-        free_reserva(reserva);
-        g_free(reserva);
+    const char *id = reserva_get_reservation_id(reserva);
+    if (manager->by_id && id && g_hash_table_lookup(manager->by_id, id)) {
+        reserva_destroy(reserva);
         return 1;
     }
 
     g_array_append_val(manager->reservas, reserva);
-    g_hash_table_insert(manager->by_id, reserva->reservation_id, reserva);
+    g_hash_table_insert(manager->by_id, (gpointer)id, reserva);
     return 1;
 }

@@ -5,7 +5,7 @@
 #include "aeronaves.h"
 
 
-ParseResultado parse_aeronave_line(char **fields, int n_fields);
+ParseResultado* parse_aeronave_line(char **fields, int n_fields);
 int csv_parser_aeronaves(
     const char *caminho_csv,
     const char *ficheiro_erros,

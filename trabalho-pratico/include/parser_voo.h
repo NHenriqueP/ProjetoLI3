@@ -3,8 +3,9 @@
 
 #include "csv_parser.h"
 #include "voos.h"
+#include "gestorglobal.h"
 
-ParseResultado parse_voo_line(char **fields, int n_fields, SistemaGestor *gestor);
+ParseResultado* parse_voo_line(char **fields, int n_fields, SistemaGestor *gestor);
 
 int csv_parser_voos(
     const char *caminho_csv,

@@ -1,5 +1,6 @@
 #include "parser_aeronave.h"
 #include "aeronaves.h"
+#include "gestor_aeronave.h"
 #include <ctype.h>
 #include <glib.h>
 #include <stdlib.h>
@@ -24,10 +25,9 @@ static int validar_numero(const char *s) {
     return 1;
 }
 
-ParseResultado parse_aeronave_line(char **fields, int n_fields) {
-    ParseResultado r;
-    r.valido = false;
-    r.entidade = NULL;
+ParseResultado* parse_aeronave_line(char **fields, int n_fields) {
+    ParseResultado *r = parse_resultado_create();
+    if (!r) return NULL;
 
 
     if (n_fields < 6) {
@@ -74,8 +74,7 @@ ParseResultado parse_aeronave_line(char **fields, int n_fields) {
         return r;
     }
 
-    r.valido = true;
-    r.entidade = a;
+    parse_resultado_mark_valid(r, a);
     return r;
 }
 
@@ -131,9 +130,9 @@ int csv_parser_aeronaves(
         int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
 
         // Validar linha com o parser específico fornecido
-        ParseResultado resultado = parse_aeronave_line(fields, n_fields);
+        ParseResultado *resultado = parse_aeronave_line(fields, n_fields);
 
-        if (!resultado.valido) {
+        if (!resultado || !parse_resultado_is_valid(resultado)) {
             // Cria o ficheiro de erros se ainda não existir
             if (!ficheiro_erros_ptr) {
                 ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
@@ -142,6 +141,7 @@ int csv_parser_aeronaves(
                     fputs("Erro ao criar ficheiro de erros: ", stderr);
                     fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
                     fputc('\n', stderr);
+                    if (resultado) parse_resultado_destroy(resultado);
                     g_free(linha_original);
                     break;
                 }
@@ -154,10 +154,12 @@ int csv_parser_aeronaves(
                 fputs(linha, ficheiro_erros_ptr);
                 fputc('\n', ficheiro_erros_ptr);
             }
+            if (resultado) parse_resultado_destroy(resultado);
         } else {
             // Adiciona entidade válida ao gestor
-            aeronave_ptr_manager_add_from_ptr_adapter(gestor, resultado.entidade);
+            aeronave_ptr_manager_add_from_ptr_adapter(gestor, parse_resultado_get_entidade(resultado));
             contador_validos++;
+            parse_resultado_destroy(resultado);
         }
 
         // libertar cópia da linha

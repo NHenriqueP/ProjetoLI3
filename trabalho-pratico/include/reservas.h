@@ -1,18 +1,21 @@
 #ifndef RESERVAS
 #define RESERVAS
 
-#include <stddef.h>
 #include <stdbool.h>
 
-typedef struct reserva {
-	char *reservation_id;
-	char *flight_ids;
-	char *document_number;
-	char *seat;
-	double price;
-	bool extra_luggage;
-	bool priority_boarding;
-	char *qr_code;
-} Reserva;
+typedef struct Reserva Reserva;
+
+Reserva* reserva_create(const char *reservation_id,
+                        const char *flight_ids,
+                        const char *document_number,
+                        const char *seat,
+                        double price,
+                        bool extra_luggage,
+                        bool priority_boarding,
+                        const char *qr_code);
+
+void reserva_destroy(Reserva *reserva);
+
+const char* reserva_get_reservation_id(const Reserva *reserva);
 
 #endif

@@ -15,8 +15,5 @@ void aeronave_destroy(Aeronave *a);
 const char* aeronave_get_id(const Aeronave *a);
 const char* aeronave_get_fabricante(const Aeronave *a);
 const char* aeronave_get_modelo(const Aeronave *a);
-int aeronave_get_ano(const Aeronave *a);
-int aeronave_get_capacidade(const Aeronave *a);
-int aeronave_get_alcance(const Aeronave *a);
 
 #endif

@@ -4,7 +4,8 @@
 #include <glib.h>
 #include <string.h>
 #include <stdio.h>
-#include <csv_parser.h>
+#include "csv_parser.h"
+#include "gestor_passageiro.h"
 
 static int validar_document_number(const char *s, size_t len) {
     if (!s || len != 9) return 0;
@@ -50,10 +51,9 @@ static int validar_email(const char *s) {
     return tem_arroba && tem_ponto_depois_arroba;
 }
 
-ParseResultado parse_passageiro_line(char **fields, int n_fields) {
-    ParseResultado r;
-    r.valido = false;
-    r.entidade = NULL;
+ParseResultado* parse_passageiro_line(char **fields, int n_fields) {
+    ParseResultado *r = parse_resultado_create();
+    if (!r) return NULL;
 
 
     if (n_fields < 10) {
@@ -162,42 +162,24 @@ ParseResultado parse_passageiro_line(char **fields, int n_fields) {
         return r;
     }
 
-    Passageiro *p = g_new0(Passageiro, 1);
+    Passageiro *p = passageiro_create(
+        document_number,
+        first_name,
+        last_name,
+        dob,
+        nationality,
+        gender,
+        email,
+        phone,
+        address,
+        photo
+    );
+
     if (!p) {
         return r;
     }
 
-    p->document_number = (char*)g_memdup2(document_number, document_number_len + 1);
-    p->first_name = (char*)g_memdup2(first_name, first_name_len + 1);
-    p->last_name = (char*)g_memdup2(last_name, last_name_len + 1);
-    p->dob = (char*)g_memdup2(dob, dob_len + 1);
-    p->nationality = (char*)g_memdup2(nationality, nationality_len + 1);
-    p->gender = (char*)g_memdup2(gender, gender_len + 1);
-    p->email = (char*)g_memdup2(email, email_len + 1);
-    p->phone = (char*)g_memdup2(phone, phone_len + 1);
-    p->address = (char*)g_memdup2(address, address_len + 1);
-
-    size_t photo_len = photo ? strlen(photo) : 0;
-    p->photo = (char*)g_memdup2(photo ? photo : "", photo_len + 1);
-
-    if (!p->document_number || !p->first_name || !p->last_name || !p->dob ||
-        !p->nationality || !p->gender || !p->email || !p->phone || !p->address || !p->photo) {
-        g_free(p->document_number);
-        g_free(p->first_name);
-        g_free(p->last_name);
-        g_free(p->dob);
-        g_free(p->nationality);
-        g_free(p->gender);
-        g_free(p->email);
-        g_free(p->phone);
-        g_free(p->address);
-        g_free(p->photo);
-        g_free(p);
-        return r;
-    }
-
-    r.valido = true;
-    r.entidade = p;
+    parse_resultado_mark_valid(r, p);
     return r;
 }
 
@@ -253,9 +235,9 @@ int csv_parser_passageiros(
         int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
 
         // Validar linha com o parser específico fornecido
-        ParseResultado resultado = parse_passageiro_line(fields, n_fields);
+        ParseResultado *resultado = parse_passageiro_line(fields, n_fields);
 
-        if (!resultado.valido) {
+        if (!resultado || !parse_resultado_is_valid(resultado)) {
             // Cria o ficheiro de erros se ainda não existir
             if (!ficheiro_erros_ptr) {
                 ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
@@ -264,6 +246,7 @@ int csv_parser_passageiros(
                     fputs("Erro ao criar ficheiro de erros: ", stderr);
                     fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
                     fputc('\n', stderr);
+                    if (resultado) parse_resultado_destroy(resultado);
                     g_free(linha_original);
                     break;
                 }
@@ -276,10 +259,12 @@ int csv_parser_passageiros(
                 fputs(linha, ficheiro_erros_ptr);
                 fputc('\n', ficheiro_erros_ptr);
             }
+            if (resultado) parse_resultado_destroy(resultado);
         } else {
             // Adiciona entidade válida ao gestor
-            passageiro_ptr_manager_add_from_ptr_adapter(gestor, resultado.entidade);
+            passageiro_ptr_manager_add_from_ptr_adapter(gestor, parse_resultado_get_entidade(resultado));
             contador_validos++;
+            parse_resultado_destroy(resultado);
         }
 
         // libertar cópia da linha

@@ -64,19 +64,4 @@ const char* aeronave_get_modelo(const Aeronave *a) {
     return NULL;
 }
 
-int aeronave_get_ano(const Aeronave *a) {
-    if (a) return a->ano;
-    return 0;
-}
-
-int aeronave_get_capacidade(const Aeronave *a) {
-    if (a) return a->capacidade;
-    return 0;
-}
-
-int aeronave_get_alcance(const Aeronave *a) {
-    if (a) return a->alcance;
-    return 0;
-}
-
 // Parser movido para parser_aeronave.c

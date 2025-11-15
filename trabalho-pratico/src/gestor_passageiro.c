@@ -1,4 +1,5 @@
 #include "gestor_passageiro.h"
+#include "passageiros.h"
 
 #include <glib.h>
 #include <stdlib.h>
@@ -7,21 +8,6 @@ struct passageiro_ptr_manager {
     GArray *passageiros; /* array de (Passageiro*) */
     GHashTable *by_doc;
 };
-
-static void free_passageiro(Passageiro *passageiro) {
-    if (!passageiro) return;
-
-    g_free(passageiro->document_number);
-    g_free(passageiro->first_name);
-    g_free(passageiro->last_name);
-    g_free(passageiro->dob);
-    g_free(passageiro->nationality);
-    g_free(passageiro->gender);
-    g_free(passageiro->email);
-    g_free(passageiro->phone);
-    g_free(passageiro->address);
-    g_free(passageiro->photo);
-}
 
 PassageiroPtrManager* passageiro_ptr_manager_create() {
     PassageiroPtrManager *m = malloc(sizeof(PassageiroPtrManager));
@@ -46,8 +32,7 @@ void passageiro_ptr_manager_destroy(PassageiroPtrManager *manager) {
         for (guint i = 0; i < manager->passageiros->len; i++) {
             Passageiro *p = g_array_index(manager->passageiros, Passageiro*, i);
             if (p) {
-                free_passageiro(p);
-                g_free(p);
+                passageiro_destroy(p);
             }
         }
         g_array_free(manager->passageiros, TRUE);
@@ -67,12 +52,12 @@ int passageiro_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entida
     if (!gestor || !entidade) return 0;
     PassageiroPtrManager *manager = (PassageiroPtrManager*)gestor;
     Passageiro *passageiro = (Passageiro*)entidade;
-    if (manager->by_doc && g_hash_table_lookup(manager->by_doc, passageiro->document_number)) {
-        free_passageiro(passageiro);
-        g_free(passageiro);
+    const char *doc_number = get_passageiro_document_number(passageiro);
+    if (manager->by_doc && g_hash_table_lookup(manager->by_doc, doc_number)) {
+        passageiro_destroy(passageiro);
         return 1;
     }
     g_array_append_val(manager->passageiros, passageiro);
-    g_hash_table_insert(manager->by_doc, passageiro->document_number, passageiro);
+    g_hash_table_insert(manager->by_doc, (gpointer)doc_number, passageiro);
     return 1;
 }
