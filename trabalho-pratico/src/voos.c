@@ -3,6 +3,20 @@
 #include <glib.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+	struct Date {
+		int year, month, day;
+	};
+
+	struct Hora {
+		int hora, minuto;
+	};
+
+	struct Horario {
+		Date data;
+		Hora hora;
+	};
+
 struct Voo {
     char *idvoo;
     Horario departure;
@@ -17,6 +31,75 @@ struct Voo {
     char *airline;
     char *tracking_url;
 };
+
+void horario_copy(Horario *dest, const Horario *src) {
+    dest->data = src->data;
+    dest->hora = src->hora;
+}
+
+void horario_free(Horario *h) {
+	if (h) {
+		free(h);
+	}
+}
+
+Date *date_new(void) {
+	Date *d = malloc(sizeof(Date));
+	if (!d) return NULL;
+	memset(d, 0, sizeof(*d));
+	return d;
+}
+
+Horario *horario_new(void) {
+    Horario *h = malloc(sizeof(Horario));
+    if (!h) return NULL;
+    memset(h, 0, sizeof(*h));
+    return h;
+}
+
+void horario_reset(Horario *h) {
+    if (!h) return;
+    memset(h, 0, sizeof(Horario));
+}
+
+const Date *horario_get_date(const Horario *h) {
+	if (!h) return NULL;
+	return &h->data;
+}
+
+void set_date(Date *d, int year, int month, int day) {
+	if (!d) return;
+	d->year = year;
+	d->month = month;
+	d->day = day;
+}
+
+void set_horario(Horario *h, int year, int month, int day, int hora, int minuto) {
+	if (!h) return;
+	h->data.year = year;
+	h->data.month = month;
+	h->data.day = day;
+	h->hora.hora = hora;
+	h->hora.minuto = minuto;
+}
+
+int comparar_dates(const Date *a, const Date *b) {
+	if (a->year != b->year) return (a->year > b->year) ? 1 : -1;
+	if (a->month != b->month) return (a->month > b->month) ? 1 : -1;
+	if (a->day != b->day) return (a->day > b->day) ? 1 : -1;
+	return 0;
+}
+
+int comparar_horarios(const Horario *a, const Horario *b) {
+	if (!a || !b) return 0;
+	if (a->data.year != b->data.year) return (a->data.year > b->data.year) ? 1 : -1;
+	if (a->data.month != b->data.month) return (a->data.month > b->data.month) ? 1 : -1;
+	if (a->data.day != b->data.day) return (a->data.day > b->data.day) ? 1 : -1;
+	if (a->hora.hora != b->hora.hora) return (a->hora.hora > b->hora.hora) ? 1 : -1;
+	if (a->hora.minuto != b->hora.minuto) return (a->hora.minuto > b->hora.minuto) ? 1 : -1;
+	return 0;
+}
+
 void voo_destroy(Voo *voo) {
 	if (!voo) return;
 

@@ -3,18 +3,11 @@
 
 #include <stddef.h>
 
-typedef struct date {
-    int year, month, day;
-} Date;
+typedef struct Date Date;
 
-typedef struct hora {
-    int hora, minuto;
-} Hora;
+typedef struct Hora  Hora;
 
-typedef struct horario {
-    Date data;
-    Hora hora;
-} Horario;
+typedef struct Horario Horario;
 
 typedef enum {
     ON_TIME,
@@ -37,6 +30,17 @@ Voo* voo_create(const char *idvoo,
                 const char *aircraft,
                 const char *airline,
                 const char *tracking_url);
+
+void horario_free(Horario *h);
+void horario_copy(Horario *dest, const Horario *src);
+void horario_reset(Horario *h);
+Date *date_new(void);
+const Date *horario_get_date(const Horario *h);
+Horario *horario_new(void);
+void set_date(Date *d, int year, int month, int day);
+void set_horario(Horario *h, int year, int month, int day, int hora, int minuto);
+int comparar_horarios(const Horario *a, const Horario *b);
+int comparar_dates(const Date *a, const Date *b);
 
 const char* voo_get_id(const Voo *voo);
 Status voo_get_status(const Voo *voo);

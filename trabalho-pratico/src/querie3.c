@@ -20,21 +20,13 @@ static int parse_date_ymd(const char *src, Date *out) {
     int y = 0, m = 0, d = 0;
     if (sscanf(src, "%d-%d-%d", &y, &m, &d) != 3) return 0;
     if (y < 1900 || m < 1 || m > 12 || d < 1 || d > 31) return 0;
-    out->year = y;
-    out->month = m;
-    out->day = d;
+    set_date(out, y, m, d);
     return 1;
 }
 
-static int compare_date(const Date *a, const Date *b) {
-    if (a->year != b->year) return (a->year < b->year) ? -1 : 1;
-    if (a->month != b->month) return (a->month < b->month) ? -1 : 1;
-    if (a->day != b->day) return (a->day < b->day) ? -1 : 1;
-    return 0;
-}
 
 static int date_in_range(const Date *target, const Date *start, const Date *end) {
-    return compare_date(target, start) >= 0 && compare_date(target, end) <= 0;
+    return comparar_dates(target, start) >= 0 && comparar_dates(target, end) <= 0;
 }
 
 static void free_airport_count(gpointer data) {
@@ -63,10 +55,12 @@ void execQ3(char linha[], SistemaGestor *gestor, int *Nout) {
         return;
     }
 
-    Date inicio = {0};
-    Date fim = {0};
-    if (!parse_date_ymd(start_raw, &inicio) || !parse_date_ymd(end_raw, &fim) || compare_date(&inicio, &fim) > 0) {
+    Date *inicio = date_new();
+    Date *fim = date_new();
+    if (!parse_date_ymd(start_raw, inicio) || !parse_date_ymd(end_raw, fim) || comparar_dates(inicio, fim) > 0) {
         if (write_blank_line(caminho_output)) (*Nout)++;
+        free(inicio);
+        free(fim);
         return;
     }
 
@@ -74,12 +68,16 @@ void execQ3(char linha[], SistemaGestor *gestor, int *Nout) {
     AeroportoPtrManager *aero_manager = gestor_global_get_aeroportos(gestor);
     if (!voos_manager || !aero_manager) {
         if (write_blank_line(caminho_output)) (*Nout)++;
+        free(inicio);
+        free(fim);
         return;
     }
 
     GHashTable *contagens = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, free_airport_count);
     if (!contagens) {
         if (write_blank_line(caminho_output)) (*Nout)++;
+        free(inicio);
+        free(fim);
         return;
     }
 
@@ -92,8 +90,9 @@ void execQ3(char linha[], SistemaGestor *gestor, int *Nout) {
         if (voo_get_status(voo) == CANCELLED) continue;
 
         const Horario *actual_departure = voo_get_actual_departure(voo);
+        const Date *dep_date = horario_get_date(actual_departure);
         if (!actual_departure) continue;
-        if (!date_in_range(&actual_departure->data, &inicio, &fim)) continue;
+        if (!date_in_range(dep_date, inicio, fim)) continue;
 
         const char *origem = voo_get_iata_origem(voo);
         if (!origem || origem[0] == '\0') continue;
@@ -125,6 +124,8 @@ void execQ3(char linha[], SistemaGestor *gestor, int *Nout) {
     FILE *output = fopen(caminho_output, "w");
     if (!output) {
         g_hash_table_destroy(contagens);
+        free(inicio);
+        free(fim);
         return;
     }
 
@@ -151,7 +152,8 @@ void execQ3(char linha[], SistemaGestor *gestor, int *Nout) {
             }
         }
     }
-
+    free(inicio);
+    free(fim);
     fclose(output);
     g_hash_table_destroy(contagens);
 

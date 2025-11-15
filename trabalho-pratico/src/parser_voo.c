@@ -8,31 +8,23 @@
 #include "gestor_voo.h"
 #include "parser_aeroporto.h"
 
+
 static int parse_horario(const char *s, Horario *h) {
     if (!s || !h) return 0;
     int Y, M, D, hh, mm;
     if (sscanf(s, "%d-%d-%d %d:%d", &Y, &M, &D, &hh, &mm) != 5) return 0;
     if (Y < 1900 || M < 1 || M > 12 || D < 1 || D > 31 || hh < 0 || hh > 23 || mm < 0 || mm > 59) return 0;
-    h->data.year = Y; h->data.month = M; h->data.day = D;
-    h->hora.hora = hh; h->hora.minuto = mm;
+    set_horario(h, Y, M, D, hh, mm);
     return 1;
 }
 
-static int comparar_horario(const Horario *a, const Horario *b) {
-    if (!a || !b) return 0;
-    if (a->data.year != b->data.year) return (a->data.year > b->data.year) ? 1 : -1;
-    if (a->data.month != b->data.month) return (a->data.month > b->data.month) ? 1 : -1;
-    if (a->data.day != b->data.day) return (a->data.day > b->data.day) ? 1 : -1;
-    if (a->hora.hora != b->hora.hora) return (a->hora.hora > b->hora.hora) ? 1 : -1;
-    if (a->hora.minuto != b->hora.minuto) return (a->hora.minuto > b->hora.minuto) ? 1 : -1;
-    return 0;
-}
+
 
 static int parse_horario_optional(const char *s, Horario *h, int *tem_valor) {
     if (!h || !tem_valor || !s) return 0;
     if (s[0] == '\0') return 0;
     if (g_ascii_strcasecmp(s, "N/A") == 0) {
-        *h = (Horario){0};
+        horario_reset(h);
         *tem_valor = 0;
         return 1;
     }
@@ -99,59 +91,111 @@ ParseResultado* parse_voo_line(char **fields, int n_fields, SistemaGestor *gesto
         return r;
     }
 
-    Horario dep = {0}, act_dep = (Horario){0}, arr = {0}, act_arr = (Horario){0};
-    if (!parse_horario(dep_str, &dep)) {
+    Horario *dep = horario_new();
+    Horario *act_dep = horario_new();
+    Horario *arr = horario_new();
+    Horario *act_arr = horario_new();
+
+    if (!parse_horario(dep_str, dep)) {
+        horario_free(dep);
+        horario_free(act_dep);
+        horario_free(arr);
+        horario_free(act_arr);
         return r;
     }
-    if (!parse_horario(arr_str, &arr)) {
+    if (!parse_horario(arr_str, arr)) {
+        horario_free(dep);
+        horario_free(act_dep);
+        horario_free(arr);
+        horario_free(act_arr);
         return r;
     }
-    if (comparar_horario(&arr, &dep) <= 0) {
+    if (comparar_horarios(arr, dep) <= 0) {
+        horario_free(dep);
+        horario_free(act_dep);
+        horario_free(arr);
+        horario_free(act_arr);
         return r;
     }
     int tem_act_dep = 0;
     int tem_act_arr = 0;
-    if (!parse_horario_optional(act_dep_str, &act_dep, &tem_act_dep)) {
+    if (!parse_horario_optional(act_dep_str, act_dep, &tem_act_dep)) {
+        horario_free(dep);
+        horario_free(act_dep);
+        horario_free(arr);
+        horario_free(act_arr);
         return r;
     }
-    if (!parse_horario_optional(act_arr_str, &act_arr, &tem_act_arr)) {
+    if (!parse_horario_optional(act_arr_str, act_arr, &tem_act_arr)) {
+        horario_free(dep);
+        horario_free(act_dep);
+        horario_free(arr);
+        horario_free(act_arr);
         return r;
     }
     
     int ok_status = 0;
     Status st = parse_status(status_str, &ok_status);
     if (!ok_status) {
+        horario_free(dep);
+        horario_free(act_dep);
+        horario_free(arr); 
+        horario_free(act_arr);
         return r;
     }
 
 
     if (st == CANCELLED) {
         if (tem_act_dep || tem_act_arr) {
+            horario_free(dep);
+            horario_free(act_dep);
+            horario_free(arr);
+            horario_free(act_arr);
             return r;
         }
     }
     
     else if (st == DELAYED) {
-        if (tem_act_dep && comparar_horario(&act_dep, &dep) < 0) {
+        if (tem_act_dep && comparar_horarios(act_dep, dep) < 0) {
+            horario_free(dep);
+            horario_free(act_dep);
+            horario_free(arr);
+            horario_free(act_arr);
             return r; // Partiu ANTES da hora
         }
-        if (tem_act_arr && comparar_horario(&act_arr, &arr) < 0) {
+        if (tem_act_arr && comparar_horarios(act_arr, arr) < 0) {
+            horario_free(dep);
+            horario_free(act_dep);
+            horario_free(arr);
+            horario_free(act_arr);
             return r; // Chegou ANTES da hora
         }
     }
     
 
-    if (!tem_act_dep) act_dep = dep;
-    if (!tem_act_arr) act_arr = arr;
-    if (tem_act_dep && tem_act_arr && comparar_horario(&act_arr, &act_dep) <= 0) {
+    if (!tem_act_dep) horario_copy(act_dep, dep);
+    if (!tem_act_arr) horario_copy(act_arr, arr);
+    if (tem_act_dep && tem_act_arr && comparar_horarios(act_arr, act_dep) <= 0) {
+        horario_free(dep);
+        horario_free(act_dep);
+        horario_free(arr);
+        horario_free(act_arr);
         return r;
     }
 
     if (!validar_url_http(url)) {
+        horario_free(dep);
+        horario_free(act_dep);
+        horario_free(arr);
+        horario_free(act_arr);
         return r;
     }
     
-    Voo *v = voo_create(flight_id, &dep, &act_dep, &arr, &act_arr, (int)gate, st, origem, destino, aircraft, airline, url);
+    Voo *v = voo_create(flight_id, dep, act_dep, arr, act_arr, (int)gate, st, origem, destino, aircraft, airline, url);
+    horario_free(dep);
+    horario_free(act_dep);
+    horario_free(arr);
+    horario_free(act_arr);
     if (!v) {
         return r;
     }
