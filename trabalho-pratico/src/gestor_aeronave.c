@@ -1,5 +1,5 @@
 #include "gestor_aeronave.h"
-
+#include "aeronaves.h"
 #include <glib.h>
 #include <stdlib.h>
 
@@ -7,14 +7,6 @@ struct aeronave_ptr_manager {
     GArray *aeronaves; /* array de (Aeronave*) */
     GHashTable *by_id;
 };
-
-static void free_aeronave(Aeronave *aeronave) {
-    if (!aeronave) return;
-
-    g_free(aeronave->id);
-    g_free(aeronave->fabricante);
-    g_free(aeronave->modelo);
-}
 AeronavePtrManager* aeronave_ptr_manager_create() {
     AeronavePtrManager *m = malloc(sizeof(AeronavePtrManager));
     if (!m) return NULL;
@@ -37,10 +29,7 @@ void aeronave_ptr_manager_destroy(AeronavePtrManager *manager) {
     if (manager->aeronaves) {
         for (guint i = 0; i < manager->aeronaves->len; i++) {
             Aeronave *a = g_array_index(manager->aeronaves, Aeronave*, i);
-            if (a) {
-                free_aeronave(a);
-                g_free(a);
-            }
+            if (a) aeronave_destroy(a);
         }
         g_array_free(manager->aeronaves, TRUE);
     }
@@ -54,13 +43,13 @@ int aeronave_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade
     if (!gestor || !entidade) return 0;
     AeronavePtrManager *manager = (AeronavePtrManager*)gestor;
     Aeronave *aeronave = (Aeronave*)entidade;
-    if (manager->by_id && g_hash_table_lookup(manager->by_id, aeronave->id)) {
-        free_aeronave(aeronave);
-        g_free(aeronave);
+    const char *id = aeronave_get_id(aeronave);
+    if (manager->by_id && id && g_hash_table_lookup(manager->by_id, id)) {
+        aeronave_destroy(aeronave);
         return 1;
     }
     g_array_append_val(manager->aeronaves, aeronave);
-    g_hash_table_insert(manager->by_id, aeronave->id, aeronave);
+    g_hash_table_insert(manager->by_id, (gpointer)id, aeronave);
     return 1;
 }
 

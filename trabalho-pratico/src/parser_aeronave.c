@@ -1,5 +1,5 @@
 #include "parser_aeronave.h"
-
+#include "aeronaves.h"
 #include <ctype.h>
 #include <glib.h>
 #include <stdlib.h>
@@ -69,23 +69,8 @@ ParseResultado parse_aeronave_line(char **fields, int n_fields) {
         return r;
     }
 
-    Aeronave *a = g_new0(Aeronave, 1);
+    Aeronave *a = aeronave_create(identifier, manufacturer, model, year, capacity, range);
     if (!a) {
-        return r;
-    }
-
-    a->id = g_strdup(identifier);
-    a->fabricante = g_strdup(manufacturer);
-    a->modelo = g_strdup(model);
-    a->ano = year;
-    a->capacidade = capacity;
-    a->alcance = range;
-
-    if (!a->id || !a->fabricante || !a->modelo) {
-        g_free(a->id);
-        g_free(a->fabricante);
-        g_free(a->modelo);
-        g_free(a);
         return r;
     }
 
