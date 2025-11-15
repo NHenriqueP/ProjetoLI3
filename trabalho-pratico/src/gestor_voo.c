@@ -8,12 +8,6 @@ struct voo_ptr_manager {
     GHashTable *by_id;
 };
 
-static void free_voo(Voo *v) {
-    if (!v) return;
-    g_free(v->tracking_url);
-    g_free(v);
-}
-
 VooPtrManager* voo_ptr_manager_create() {
     VooPtrManager *m = malloc(sizeof(VooPtrManager));
     if (!m) return NULL;
@@ -37,7 +31,7 @@ void voo_ptr_manager_destroy(VooPtrManager *manager) {
     if (manager->flights) {
         for (guint i = 0; i < manager->flights->len; i++) {
             Voo *v = g_array_index(manager->flights, Voo*, i);
-            if (v) free_voo(v);
+            if (v) voo_destroy(v);
         }
         g_array_free(manager->flights, TRUE);
     }
@@ -50,14 +44,15 @@ int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
     if (!gestor || !entidade) return 0;
     VooPtrManager *manager = (VooPtrManager*)gestor;
     Voo *voo = (Voo*)entidade;
+    const char *id = voo_get_id(voo);
 
-    if (manager->by_id && g_hash_table_lookup(manager->by_id, voo->idvoo)) {
-        free_voo(voo);
+    if (manager->by_id && g_hash_table_lookup(manager->by_id, id)) {
+        voo_destroy(voo);
         return 1;
     }
 
     g_array_append_val(manager->flights, voo);
-    g_hash_table_insert(manager->by_id, voo->idvoo, voo);
+    g_hash_table_insert(manager->by_id, (gpointer)id, voo);
     return 1;
 }
 

@@ -86,10 +86,10 @@ ParseResultado* parse_voo_line(char **fields, int n_fields, SistemaGestor *gesto
     if (strcmp(origem, destino) == 0) {
         return r;
     }
-    if (!aircraft || strlen(aircraft) >= sizeof(((Voo*)0)->aircraft) || !existe_aeronave(gestor_global_get_aeronaves(gestor), aircraft)) {
+    if (!aircraft  || !existe_aeronave(gestor_global_get_aeronaves(gestor), aircraft)) {
         return r;
     }
-    if (!airline || strlen(airline) >= sizeof(((Voo*)0)->airline)) {
+    if (!airline ) {
         return r;
     }
 
@@ -147,28 +147,14 @@ ParseResultado* parse_voo_line(char **fields, int n_fields, SistemaGestor *gesto
         return r;
     }
 
-
-    Voo *v = g_new0(Voo, 1);
+    if (!validar_url_http(url)) {
+        return r;
+    }
+    
+    Voo *v = voo_create(flight_id, &dep, &act_dep, &arr, &act_arr, (int)gate, st, origem, destino, aircraft, airline, url);
     if (!v) {
         return r;
     }
-
-    g_strlcpy(v->idvoo, flight_id, sizeof(v->idvoo));
-    v->departure = dep;
-    v->actualdeparture = act_dep;
-    v->arrival = arr;
-    v->actualarrival = act_arr;
-    v->gate = (int)gate;
-    v->estado = st;
-    g_strlcpy(v->iataorigem, origem, sizeof(v->iataorigem));
-    g_strlcpy(v->iatadestino, destino, sizeof(v->iatadestino));
-    g_strlcpy(v->aircraft, aircraft, sizeof(v->aircraft));
-    g_strlcpy(v->airline, airline, sizeof(v->airline));
-    if (!validar_url_http(url)) {
-        g_free(v);
-        return r;
-    }
-    v->tracking_url = g_strdup(url);
 
     parse_resultado_mark_valid(r, v);
     return r;

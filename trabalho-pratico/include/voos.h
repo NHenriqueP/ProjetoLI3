@@ -22,20 +22,21 @@ typedef enum {
     CANCELLED
 } Status;
 
-typedef struct voo {
-    char idvoo[8];
-    Horario departure;
-    Horario actualdeparture;
-    Horario arrival;
-    Horario actualarrival;
-    int gate;
-    Status estado;
-    char iataorigem[4];
-    char iatadestino[4];
-    char aircraft[10];
-    char airline[50];
-    char *tracking_url;
-} Voo;
+typedef struct Voo Voo;
+
+void voo_destroy(Voo *voo);
+Voo* voo_create(const char *idvoo,
+                const Horario *departure,
+                const Horario *actualdeparture,
+                const Horario *arrival,
+                const Horario *actualarrival,
+                int gate,
+                Status estado,
+                const char *iataorigem,
+                const char *iatadestino,
+                const char *aircraft,
+                const char *airline,
+                const char *tracking_url);
 
 const char* voo_get_id(const Voo *voo);
 Status voo_get_status(const Voo *voo);
