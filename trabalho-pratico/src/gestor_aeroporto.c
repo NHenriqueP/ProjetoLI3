@@ -2,7 +2,6 @@
 
 #include <glib.h>
 #include <stdlib.h>
-#include <string.h>
 
 struct aeroporto_ptr_manager {
     GArray *airports; /* array of (Aeroporto*) */
@@ -57,31 +56,18 @@ void airport_ptr_manager_destroy(AeroportoPtrManager *manager) {
     free(manager);
 }
 
-int airport_ptr_manager_add_from_ptr(AeroportoPtrManager *manager, Aeroporto *entidade) {
-    if (!manager || !entidade) return 0;
-    if (manager->by_iata && g_hash_table_lookup(manager->by_iata, entidade->iata)) {
-        free_airport(entidade);
-        g_free(entidade);
-        return 1;
-    }
-    g_array_append_val(manager->airports, entidade);
-    g_hash_table_insert(manager->by_iata, entidade->iata, entidade);
-    return 1;
-}
-
 int airport_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
     if (!gestor || !entidade) return 0;
-    return airport_ptr_manager_add_from_ptr((AeroportoPtrManager*)gestor, (Aeroporto*)entidade);
-}
-
-guint airport_ptr_manager_count(const AeroportoPtrManager *manager) {
-    if (!manager || !manager->airports) return 0;
-    return manager->airports->len;
-}
-
-const Aeroporto* airport_ptr_manager_get(const AeroportoPtrManager *manager, guint index) {
-    if (!manager || !manager->airports || index >= manager->airports->len) return NULL;
-    return g_array_index(manager->airports, Aeroporto*, index);
+    AeroportoPtrManager *manager = (AeroportoPtrManager*)gestor;
+    Aeroporto *airport = (Aeroporto*)entidade;
+    if (manager->by_iata && g_hash_table_lookup(manager->by_iata, airport->iata)) {
+        free_airport(airport);
+        g_free(airport);
+        return 1;
+    }
+    g_array_append_val(manager->airports, airport);
+    g_hash_table_insert(manager->by_iata, airport->iata, airport);
+    return 1;
 }
 
 Aeroporto* airport_ptr_manager_find_by_iata(AeroportoPtrManager *manager, const char *iata) {

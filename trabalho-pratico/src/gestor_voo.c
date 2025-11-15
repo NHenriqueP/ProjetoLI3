@@ -2,7 +2,6 @@
 
 #include <glib.h>
 #include <stdlib.h>
-#include <string.h>
 
 struct voo_ptr_manager {
     GArray *flights;
@@ -47,22 +46,19 @@ void voo_ptr_manager_destroy(VooPtrManager *manager) {
     free(manager);
 }
 
-int voo_ptr_manager_add_from_ptr(VooPtrManager *manager, Voo *entidade) {
-    if (!manager || !entidade) return 0;
+int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
+    if (!gestor || !entidade) return 0;
+    VooPtrManager *manager = (VooPtrManager*)gestor;
+    Voo *voo = (Voo*)entidade;
 
-    if (manager->by_id && g_hash_table_lookup(manager->by_id, entidade->idvoo)) {
-        free_voo(entidade);
+    if (manager->by_id && g_hash_table_lookup(manager->by_id, voo->idvoo)) {
+        free_voo(voo);
         return 1;
     }
 
-    g_array_append_val(manager->flights, entidade);
-    g_hash_table_insert(manager->by_id, entidade->idvoo, entidade);
+    g_array_append_val(manager->flights, voo);
+    g_hash_table_insert(manager->by_id, voo->idvoo, voo);
     return 1;
-}
-
-int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
-    if (!gestor || !entidade) return 0;
-    return voo_ptr_manager_add_from_ptr((VooPtrManager*)gestor, (Voo*)entidade);
 }
 
 Voo* voo_ptr_manager_find_by_id(VooPtrManager *manager, const char *id) {

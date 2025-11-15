@@ -8,7 +8,6 @@ typedef struct voo_ptr_manager VooPtrManager;
 
 VooPtrManager* voo_ptr_manager_create();
 void voo_ptr_manager_destroy(VooPtrManager *manager);
-int voo_ptr_manager_add_from_ptr(VooPtrManager *manager, Voo *entidade);
 int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade);
 Voo* voo_ptr_manager_find_by_id(VooPtrManager *manager, const char *id);
 

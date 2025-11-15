@@ -2,7 +2,6 @@
 
 #include <glib.h>
 #include <stdlib.h>
-#include <string.h>
 
 struct aeronave_ptr_manager {
     GArray *aeronaves; /* array de (Aeronave*) */
@@ -51,26 +50,18 @@ void aeronave_ptr_manager_destroy(AeronavePtrManager *manager) {
     free(manager);
 }
 
-int aeronave_ptr_manager_add_from_ptr(AeronavePtrManager *manager, Aeronave *entidade) {
-    if (!manager || !entidade) return 0;
-    if (manager->by_id && g_hash_table_lookup(manager->by_id, entidade->id)) {
-        free_aeronave(entidade);
-        g_free(entidade);
-        return 1;
-    }
-    g_array_append_val(manager->aeronaves, entidade);
-    g_hash_table_insert(manager->by_id, entidade->id, entidade);
-    return 1;
-}
-
 int aeronave_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
     if (!gestor || !entidade) return 0;
-    return aeronave_ptr_manager_add_from_ptr((AeronavePtrManager*)gestor, (Aeronave*)entidade);
-}
-
-Aeronave* aeronave_ptr_manager_find_by_id(AeronavePtrManager *manager, const char *id) {
-    if (!manager || !manager->by_id || !id) return NULL;
-    return g_hash_table_lookup(manager->by_id, id);
+    AeronavePtrManager *manager = (AeronavePtrManager*)gestor;
+    Aeronave *aeronave = (Aeronave*)entidade;
+    if (manager->by_id && g_hash_table_lookup(manager->by_id, aeronave->id)) {
+        free_aeronave(aeronave);
+        g_free(aeronave);
+        return 1;
+    }
+    g_array_append_val(manager->aeronaves, aeronave);
+    g_hash_table_insert(manager->by_id, aeronave->id, aeronave);
+    return 1;
 }
 
 int existe_aeronave(AeronavePtrManager *manager, const char *id) {

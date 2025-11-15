@@ -2,7 +2,6 @@
 
 #include <glib.h>
 #include <stdlib.h>
-#include <string.h>
 
 struct passageiro_ptr_manager {
     GArray *passageiros; /* array de (Passageiro*) */
@@ -59,18 +58,6 @@ void passageiro_ptr_manager_destroy(PassageiroPtrManager *manager) {
     free(manager);
 }
 
-int passageiro_ptr_manager_add_from_ptr(PassageiroPtrManager *manager, Passageiro *entidade) {
-    if (!manager || !entidade) return 0;
-    if (manager->by_doc && g_hash_table_lookup(manager->by_doc, entidade->document_number)) {
-        free_passageiro(entidade);
-        g_free(entidade);
-        return 1;
-    }
-    g_array_append_val(manager->passageiros, entidade);
-    g_hash_table_insert(manager->by_doc, entidade->document_number, entidade);
-    return 1;
-}
-
 int existe_document_number(PassageiroPtrManager *manager, const char *document_number) {
     if (!manager || !document_number) return 0;
     return g_hash_table_contains(manager->by_doc, document_number);
@@ -78,20 +65,14 @@ int existe_document_number(PassageiroPtrManager *manager, const char *document_n
 
 int passageiro_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
     if (!gestor || !entidade) return 0;
-    return passageiro_ptr_manager_add_from_ptr((PassageiroPtrManager*)gestor, (Passageiro*)entidade);
-}
-
-Passageiro* passageiro_ptr_manager_find_by_doc(PassageiroPtrManager *manager, const char *document_number) {
-    if (!manager || !manager->by_doc || !document_number) return NULL;
-    return g_hash_table_lookup(manager->by_doc, document_number);
-}
-
-guint passageiro_ptr_manager_count(const PassageiroPtrManager *manager) {
-    if (!manager || !manager->passageiros) return 0;
-    return manager->passageiros->len;
-}
-
-const Passageiro* passageiro_ptr_manager_get(const PassageiroPtrManager *manager, guint index) {
-    if (!manager || !manager->passageiros || index >= manager->passageiros->len) return NULL;
-    return g_array_index(manager->passageiros, Passageiro*, index);
+    PassageiroPtrManager *manager = (PassageiroPtrManager*)gestor;
+    Passageiro *passageiro = (Passageiro*)entidade;
+    if (manager->by_doc && g_hash_table_lookup(manager->by_doc, passageiro->document_number)) {
+        free_passageiro(passageiro);
+        g_free(passageiro);
+        return 1;
+    }
+    g_array_append_val(manager->passageiros, passageiro);
+    g_hash_table_insert(manager->by_doc, passageiro->document_number, passageiro);
+    return 1;
 }
