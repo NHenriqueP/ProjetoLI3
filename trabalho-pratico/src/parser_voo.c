@@ -7,7 +7,6 @@
 #include "gestor_voo.h"
 #include "parser_aeroporto.h"
 
-
 static int parse_horario(const char *s, Horario *h) {
     if (!s || !h) return 0;
     int Y, M, D, hh, mm;
@@ -141,7 +140,6 @@ ParseResultado* parse_voo_line(char **fields, int n_fields, SistemaGestor *gesto
         return r;
     }
 
-
     if (st == CANCELLED) {
         if (tem_act_dep || tem_act_arr) {
             horario_free(dep);
@@ -168,7 +166,6 @@ ParseResultado* parse_voo_line(char **fields, int n_fields, SistemaGestor *gesto
             return r; // Chegou ANTES da hora
         }
     }
-    
 
     if (!tem_act_dep) horario_copy(act_dep, dep);
     if (!tem_act_arr) horario_copy(act_arr, arr);
@@ -212,7 +209,7 @@ int csv_parser_voos(
     if (!ficheiro) {
         fputs("Erro ao abrir ficheiro '", stderr);
         fputs(caminho_csv ? caminho_csv : "<NULL>", stderr);
-        fputs("': ", stderr);//fecha a aspa e separa.
+        fputs("': ", stderr); //fecha a aspa e separa.
         fputs(strerror(errno), stderr);
         fputc('\n', stderr);
         return 0;

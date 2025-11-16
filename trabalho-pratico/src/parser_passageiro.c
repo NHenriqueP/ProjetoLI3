@@ -192,7 +192,7 @@ int csv_parser_passageiros(
     if (!ficheiro) {
         fputs("Erro ao abrir ficheiro '", stderr);
         fputs(caminho_csv ? caminho_csv : "<NULL>", stderr);
-        fputs("': ", stderr);//fecha a aspa e separa.
+        fputs("': ", stderr); //fecha a aspa e separa.
         fputs(strerror(errno), stderr);
         fputc('\n', stderr);
         return 0;
