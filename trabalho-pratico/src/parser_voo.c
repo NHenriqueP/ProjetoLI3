@@ -1,5 +1,4 @@
 #include "parser_voo.h"
-
 #include <glib.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,8 +16,6 @@ static int parse_horario(const char *s, Horario *h) {
     set_horario(h, Y, M, D, hh, mm);
     return 1;
 }
-
-
 
 static int parse_horario_optional(const char *s, Horario *h, int *tem_valor) {
     if (!h || !tem_valor || !s) return 0;

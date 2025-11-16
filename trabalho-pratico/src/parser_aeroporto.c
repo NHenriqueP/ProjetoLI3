@@ -1,8 +1,7 @@
 #include "parser_aeroporto.h"
-
 #include <glib.h>
 #include <string.h>
- #include <ctype.h>
+#include <ctype.h>
 #include <stdio.h>
 #include "csv_parser.h"
 #include "gestor_aeroporto.h"

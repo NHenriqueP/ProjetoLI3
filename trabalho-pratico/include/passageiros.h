@@ -21,5 +21,4 @@ void passageiro_destroy(Passageiro *passageiro);
 
 const char* get_passageiro_document_number(const Passageiro *passageiro);
 
-
 #endif

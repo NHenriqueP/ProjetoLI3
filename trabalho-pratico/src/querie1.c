@@ -67,6 +67,4 @@ void execQ1(char linha[],SistemaGestor *gestor, int *Nout) {
             return;
         }
     }
-    
-
 }

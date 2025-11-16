@@ -1,5 +1,4 @@
 #include "parser_passageiro.h"
-
 #include <ctype.h>
 #include <glib.h>
 #include <string.h>

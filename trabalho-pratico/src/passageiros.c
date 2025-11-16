@@ -1,7 +1,5 @@
 #include "passageiros.h"
-
 #include <glib.h>
-
 
 struct Passageiro {
 	char *document_number;

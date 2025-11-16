@@ -1,6 +1,5 @@
 #ifndef AEROPORTO
 #define AEROPORTO
-
 #include <stddef.h> // size_t
 
 typedef struct Aeroporto Aeroporto;

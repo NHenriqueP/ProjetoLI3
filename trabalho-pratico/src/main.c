@@ -1,7 +1,6 @@
 #include "app_runner.h"
 #include "gestorglobal.h"
 
-
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         return 1;
@@ -22,7 +21,6 @@ int main(int argc, char *argv[]) {
         destruir_gestor_global(gestorGlob);
         return 1;
     }
-
 
     destruir_gestor_global(gestorGlob);
 

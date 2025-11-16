@@ -62,7 +62,6 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
     );
     if (count_airports < 0) return 0;
 
-
     if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "aircrafts.csv")) return 0;
     const char *erros_aeronaves_rel = "resultados/aircrafts_errors.csv";
     l = strlen(erros_aeronaves_rel);

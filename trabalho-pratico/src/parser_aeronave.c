@@ -174,5 +174,3 @@ int csv_parser_aeronaves(
 
     return contador_validos;
 }
-
-

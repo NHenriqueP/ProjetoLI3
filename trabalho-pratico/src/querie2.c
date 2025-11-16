@@ -6,7 +6,6 @@
 #include <ctype.h>
 #include <limits.h>
 #include <glib.h>
-
 #include "querie2.h"
 #include "aeronaves.h"
 #include "voos.h"

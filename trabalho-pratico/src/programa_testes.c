@@ -11,7 +11,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-
 #include <glib.h>
 #include "app_runner.h"
 #include "gestorglobal.h"

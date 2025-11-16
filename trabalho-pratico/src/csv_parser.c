@@ -39,7 +39,6 @@ void parse_resultado_destroy(ParseResultado *resultado) {
     free(resultado);
 }
 
-
 int csv_split_quoted(
     char *s,//linha que se transforma em tokens
     char sep,// o separador entre os tokens é a ','
@@ -77,4 +76,3 @@ int csv_split_quoted(
     *w = '\0';
     return n;
 }
-

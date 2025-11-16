@@ -1,5 +1,4 @@
 #include "voos.h"
-
 #include <glib.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -152,7 +151,6 @@ const char* voo_get_id(const Voo *voo) {
 	if (voo) return voo->idvoo;
 	return NULL;
 }
-
 
 Status voo_get_status(const Voo *voo) {
 	return voo ? voo->estado : ON_TIME;

@@ -1,12 +1,10 @@
 #include "parser_reserva.h"
-
 #include <ctype.h>
 #include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "gestorglobal.h"
 #include "gestor_voo.h"
 #include "voos.h"

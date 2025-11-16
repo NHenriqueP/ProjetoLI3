@@ -1,10 +1,8 @@
 // Query 3: aeroporto com mais partidas num intervalo de datas (exclui CANCELLED)
 #include "querie3.h"
-
 #include "aeroportos.h"
 #include "gestor_aeroporto.h"
 #include "voos.h"
-
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
@@ -23,7 +21,6 @@ static int parse_date_ymd(const char *src, Date *out) {
     set_date(out, y, m, d);
     return 1;
 }
-
 
 static int date_in_range(const Date *target, const Date *start, const Date *end) {
     return comparar_dates(target, start) >= 0 && comparar_dates(target, end) <= 0;

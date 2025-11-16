@@ -72,4 +72,3 @@ ReservaPtrManager *gestor_global_get_reservas(SistemaGestor *gestor) {
     if (!gestor) return NULL;
     return gestor->reservas;
 }
-
