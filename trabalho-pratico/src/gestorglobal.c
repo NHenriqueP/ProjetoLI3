@@ -1,4 +1,3 @@
-// Implementação do gestor global (estrutura opaca)
 #include <stdlib.h>
 #include "gestorglobal.h"
 #include "gestor_aeroporto.h"
@@ -7,7 +6,6 @@
 #include "gestor_passageiro.h"
 #include "gestor_reserva.h"
 
-// Definição interna da estrutura opaca declarada em gestorglobal.h
 struct SistemaGestor {
     AeroportoPtrManager *aeroportos;
     VooPtrManager *voos;

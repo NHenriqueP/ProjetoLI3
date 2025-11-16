@@ -1,3 +1,4 @@
+// Query 1: Resumo do aeroporto dado o código IATA
 #include "querie1.h"
 #include <string.h>
 #include <ctype.h>
@@ -32,7 +33,7 @@ void execQ1(char linha[],SistemaGestor *gestor, int *Nout) {
             // strncpy copia 'len' caracteres de 'ini' para 'codigo_iata'
             strncpy(codigo_iata, ini, len);
             
-            // 5. Garantir a terminação nula (o strncpy não faz isso automaticamente se len = 4)
+            // Garantir a terminação nula (o strncpy não faz isso automaticamente se len = 4)
             codigo_iata[len] = '\0'; 
 
             char caminho_output[256]; // Buffer de tamanho suficiente
