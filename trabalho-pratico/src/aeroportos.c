@@ -78,4 +78,3 @@ int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize) {
     return n;
 }
 
-/* Parser movido para parser_aeroporto.c */
