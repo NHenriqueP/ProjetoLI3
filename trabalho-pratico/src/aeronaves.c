@@ -47,7 +47,6 @@ void aeronave_destroy(Aeronave *a) {
     g_free(a);
 }
 
-// ==================== GETTERS ====================
 
 const char* aeronave_get_id(const Aeronave *a) {
     if (a) return a->id;
@@ -64,4 +63,3 @@ const char* aeronave_get_modelo(const Aeronave *a) {
     return NULL;
 }
 
-// Parser movido para parser_aeronave.c

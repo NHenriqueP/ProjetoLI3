@@ -166,7 +166,7 @@ int csv_parser_aeronaves(
         g_free(linha_original);
     }
 
-    // Fechar e libertar tudo
+
     if (ficheiro_erros_ptr) fclose(ficheiro_erros_ptr);
     g_free(header);
     free(linha);
