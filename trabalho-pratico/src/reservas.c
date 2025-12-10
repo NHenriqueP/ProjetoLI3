@@ -60,3 +60,13 @@ const char* reserva_get_reservation_id(const Reserva *reserva) {
 	if (reserva) return reserva->reservation_id;
 	return NULL;
 }
+
+const char* reserva_get_flight_ids(const Reserva *reserva) {
+	if (reserva) return reserva->flight_ids;
+	return NULL;
+}
+
+const char* reserva_get_document_number(const Reserva *reserva) {
+	if (reserva) return reserva->document_number;
+	return NULL;
+}

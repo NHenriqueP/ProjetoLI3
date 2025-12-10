@@ -56,3 +56,18 @@ int reserva_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade)
     g_hash_table_insert(manager->by_id, (gpointer)id, reserva);
     return 1;
 }
+
+guint reserva_ptr_manager_count(const ReservaPtrManager *manager) {
+    if (!manager || !manager->reservas) return 0;
+    return manager->reservas->len;
+}
+
+const Reserva* reserva_ptr_manager_get(const ReservaPtrManager *manager, guint index) {
+    if (!manager || !manager->reservas || index >= manager->reservas->len) return NULL;
+    return g_array_index(manager->reservas, Reserva*, index);
+}
+
+const Reserva* reserva_ptr_manager_find_by_id(const ReservaPtrManager *manager, const char *id) {
+    if (!manager || !manager->by_id || !id) return NULL;
+    return g_hash_table_lookup(manager->by_id, id);
+}
