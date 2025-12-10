@@ -2,6 +2,7 @@
 #define CSV_PARSER_H
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 typedef struct ParseResultado ParseResultado;
 
@@ -17,4 +18,27 @@ int csv_split_quoted(
     char **out,//array onde ficam os ponteiros para o inicio de cada campo; ex: iaca
     int max_out//número máximo de carateres
 );
+
+int csv_generic_parser(
+    FILE *data_file,
+    FILE *error_file,
+    void *gestor,
+    void *ctx,
+    bool (*is_valid_entidade)(char **fields, int n_fields, void *ctx),
+    void* (*create_entidade)(char **fields, int n_fields, void *ctx),
+    int (*insert_entidade)(void *gestor, const void *entidade),
+    char separador
+);
+
+int csv_parse_file(
+    const char *data_path,
+    const char *error_path,
+    void *gestor,
+    void *ctx,
+    bool (*is_valid_entidade)(char **fields, int n_fields, void *ctx),
+    void* (*create_entidade)(char **fields, int n_fields, void *ctx),
+    int (*insert_entidade)(void *gestor, const void *entidade),
+    char separador
+);
+
 #endif

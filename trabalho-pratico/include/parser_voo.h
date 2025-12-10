@@ -6,6 +6,7 @@
 #include "gestorglobal.h"
 
 ParseResultado* parse_voo_line(char **fields, int n_fields, SistemaGestor *gestor);
+void* criar_voo(char **fields, int n_fields, void *ctx);
 
 int csv_parser_voos(
     const char *caminho_csv,

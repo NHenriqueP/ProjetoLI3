@@ -6,6 +6,7 @@
 
 
 ParseResultado* parse_aeronave_line(char **fields, int n_fields);
+void* criar_aeronave(char **fields, int n_fields, void *ctx);
 int csv_parser_aeronaves(
     const char *caminho_csv,
     const char *ficheiro_erros,

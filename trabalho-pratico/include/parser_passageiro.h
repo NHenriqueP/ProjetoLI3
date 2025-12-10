@@ -5,6 +5,7 @@
 #include "passageiros.h"
 
 ParseResultado* parse_passageiro_line(char **fields, int n_fields);
+void* criar_passageiro(char **fields, int n_fields, void *ctx);
 
 int csv_parser_passageiros(
     const char *caminho_csv,

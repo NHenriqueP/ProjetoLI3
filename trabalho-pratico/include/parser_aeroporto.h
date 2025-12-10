@@ -12,6 +12,7 @@ int validar_iata(const char *s);
 int validar_icao(const char *s);
 
 ParseResultado* parse_airport_line(char **fields, int n_fields);
+void* criar_aeroporto(char **fields, int n_fields, void *ctx);
 int csv_parser_airports(
     const char *caminho_csv,
     const char *ficheiro_erros,

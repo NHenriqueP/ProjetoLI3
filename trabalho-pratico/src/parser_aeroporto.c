@@ -74,13 +74,9 @@ int validar_icao(const char *s) {
     return 1;
 }
 
-ParseResultado* parse_airport_line(char **fields, int n_fields) {
-    ParseResultado *r = parse_resultado_create();
-    if (!r) return NULL;
-
-    if (n_fields < 8) {
-        return r;
-    }
+void* criar_aeroporto(char **fields, int n_fields, void *ctx) {
+    (void)ctx;
+    if (n_fields < 8) return NULL;
 
     char *iata      = fields[0];
     char *nome      = fields[1];
@@ -91,33 +87,27 @@ ParseResultado* parse_airport_line(char **fields, int n_fields) {
     char *icao      = fields[6];
     char *tipo      = fields[7];
 
-    if (!validar_iata(iata) || !validar_icao(icao)) {
-        return r;
-    }
+    if (!validar_iata(iata) || !validar_icao(icao)) return NULL;
+    if (!validar_latitude(latitude) || !validar_longitude(longitude)) return NULL;
+    if (!nome || !cidade || !pais || strlen(nome) == 0 || strlen(cidade) == 0 || strlen(pais) == 0) return NULL;
+    if (tipo_aeroporto_valido(tipo) == 0) return NULL;
 
-    if (!validar_latitude(latitude) || !validar_longitude(longitude)) {
-        return r;
-    }
+    return aeroporto_create(iata,
+                            nome,
+                            cidade,
+                            pais,
+                            latitude,
+                            longitude,
+                            icao,
+                            tipo);
+}
 
-    if (!nome || !cidade || !pais || strlen(nome) == 0 || strlen(cidade) == 0 || strlen(pais) == 0) {
-        return r;
-    }
+ParseResultado* parse_airport_line(char **fields, int n_fields) {
+    ParseResultado *r = parse_resultado_create();
+    if (!r) return NULL;
 
-    if (tipo_aeroporto_valido(tipo) == 0) {
-        return r;
-    }
-
-    Aeroporto *a = aeroporto_create(iata,
-                                    nome,
-                                    cidade,
-                                    pais,
-                                    latitude,
-                                    longitude,
-                                    icao,
-                                    tipo);
-    if (!a) {
-        return r;
-    }
+    Aeroporto *a = (Aeroporto*)criar_aeroporto(fields, n_fields, NULL);
+    if (!a) return r;
 
     parse_resultado_mark_valid(r, a);
     return r;

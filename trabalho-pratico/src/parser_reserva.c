@@ -1,16 +1,11 @@
 #include "parser_reserva.h"
 #include <ctype.h>
+#include <errno.h>
 #include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gestorglobal.h"
-#include "gestor_voo.h"
-#include "voos.h"
-#include "gestor_passageiro.h"
-#include "gestor_reserva.h"
-#include "csv_parser.h"
 
 static int validar_reservation_id(const char *s) {
     if (!s || strlen(s) != 10) return 0;
@@ -51,12 +46,6 @@ static int parse_boolean(const char *s, bool *out) {
     return 0;
 }
 
-static int existe_flight_id(const char *id, SistemaGestor *gestor) {
-    VooPtrManager *voos_manager = gestor_global_get_voos(gestor);
-    if (!voos_manager) return 0;
-    return voo_ptr_manager_find_by_id(voos_manager, id) != NULL;
-}
-
 static char* trim_spaces(char *s) {
     if (!s) return s;
     while (g_ascii_isspace(*s)) s++;
@@ -90,6 +79,12 @@ static int extrair_ids_de_lista(const char *src, char ids[][8], int max_ids) {
     return count;
 }
 
+static int existe_flight_id(const char *id, SistemaGestor *gestor) {
+    VooPtrManager *voos_manager = gestor_global_get_voos(gestor);
+    if (!voos_manager) return 0;
+    return voo_ptr_manager_find_by_id(voos_manager, id) != NULL;
+}
+
 static int processar_e_validar_flights(const char *flight_ids_str, SistemaGestor *gestor) {
     if (!flight_ids_str || *flight_ids_str == '\0') return 0;
     char ids[2][8] = {{0}};
@@ -110,13 +105,9 @@ static int processar_e_validar_flights(const char *flight_ids_str, SistemaGestor
     return 1;
 }
 
-ParseResultado* parse_reserva_line(char **fields, int n_fields, SistemaGestor *gestor) {
-    ParseResultado *r = parse_resultado_create();
-    if (!r) return NULL;
-
-    if (n_fields < 8) {
-        return r;
-    }
+void* criar_reserva(char **fields, int n_fields, void *ctx) {
+    SistemaGestor *gestor = (SistemaGestor*)ctx;
+    if (!gestor || n_fields < 8) return NULL;
 
     char *reservation_id    = fields[0];
     char *flight_ids        = fields[1];
@@ -127,149 +118,89 @@ ParseResultado* parse_reserva_line(char **fields, int n_fields, SistemaGestor *g
     char *priority_str      = fields[6];
     char *qr_code           = fields[7];
 
-    if (!validar_reservation_id(reservation_id)) {
-        return r;
-    }
+    if (!validar_reservation_id(reservation_id)) return NULL;
+    if (!processar_e_validar_flights(flight_ids, gestor)) return NULL;
 
-    if (!processar_e_validar_flights(flight_ids, gestor)) {
-        return r;
-    }
-
-    if (!document_number || strlen(document_number) == 0 || strlen(document_number) > 9 || !existe_document_number(gestor_global_get_passageiros(gestor), document_number)) {
-        return r;
+    if (!document_number || strlen(document_number) == 0 || strlen(document_number) > 9 ||
+        !existe_document_number(gestor_global_get_passageiros(gestor), document_number)) {
+        return NULL;
     }
     for (const char *p = document_number; *p; ++p) {
-    if (!isdigit((unsigned char)*p)) return r;
+        if (!isdigit((unsigned char)*p)) return NULL;
     }
 
-    if (!validar_seat(seat)) {
-        return r;
-    }
+    if (!validar_seat(seat)) return NULL;
 
     double price;
-    if (!validar_preco(price_str, &price)) {
-        return r;
-    }
+    if (!validar_preco(price_str, &price)) return NULL;
 
     bool extra_luggage;
-    if (!parse_boolean(extra_luggage_str, &extra_luggage)) {
-        return r;
-    }
+    if (!parse_boolean(extra_luggage_str, &extra_luggage)) return NULL;
 
     bool priority_boarding;
-    if (!parse_boolean(priority_str, &priority_boarding)) {
-        return r;
-    }
+    if (!parse_boolean(priority_str, &priority_boarding)) return NULL;
 
-    Reserva *res = reserva_create(reservation_id,
-                                 flight_ids,
-                                 document_number,
-                                 seat,
-                                 price,
-                                 extra_luggage,
-                                 priority_boarding,
-                                 qr_code);
-    if (!res) {
-        return r;
-    }
+    return reserva_create(
+        reservation_id,
+        flight_ids,
+        document_number,
+        seat,
+        price,
+        extra_luggage,
+        priority_boarding,
+        qr_code
+    );
+}
+
+ParseResultado* parse_reserva_line(char **fields, int n_fields, SistemaGestor *gestor) {
+    ParseResultado *r = parse_resultado_create();
+    if (!r) return NULL;
+
+    Reserva *res = (Reserva*)criar_reserva(fields, n_fields, gestor);
+    if (!res) return r;
 
     parse_resultado_mark_valid(r, res);
     return r;
 }
 
 int csv_parser_reservas(
-    const char *caminho_csv,       // Caminho do ficheiro a ler
-    const char *ficheiro_erros,    // Caminho para o ficheiro de erros
-    void *gestor,    
-    SistemaGestor *gestorGlob,              // Ponteiro para o gestor       // Função que faz o parsing da linha
-    char separador                 // Separador CSV: ','
+    const char *caminho_csv,
+    const char *ficheiro_erros,
+    void *gestor,
+    SistemaGestor *gestorGlob,
+    char separador
 ) {
     FILE *ficheiro = fopen(caminho_csv, "r");
     if (!ficheiro) {
         fputs("Erro ao abrir ficheiro '", stderr);
         fputs(caminho_csv ? caminho_csv : "<NULL>", stderr);
-        fputs("': ", stderr);//fecha a aspa e separa.
+        fputs("': ", stderr);
         fputs(strerror(errno), stderr);
         fputc('\n', stderr);
         return 0;
     }
 
-    FILE *ficheiro_erros_ptr = NULL;
-    char *linha = NULL;
-    // getline() usa size_t para o tamanho  por isso o uso do size_t 
-    size_t tam = 0;
-    // 'lida' guarda o resultado de getline(): número de bytes lidos ou -1 em EOF/erro.
-    // getline() retorna ssize_t (signed) para poder indicar -1, por isso usamos ssize_t.
-    ssize_t lida;
-    char *header = NULL;
-    bool header_lido = false;
-    int contador_validos = 0;
-
-    while ((lida = getline(&linha, &tam, ficheiro)) != -1) {
-        // Preservar a linha original (incluindo terminadores de linha) para o ficheiro de erros
-        size_t original_len = (size_t)lida;
-        char *linha_original = g_strndup(linha, original_len);
-
-        if (header_lido) {
-        // Remover \n e \r para efeitos de parsing (sem afetar o comprimento usado para escrever no ficheiro de erros)
-        while (lida > 0 && (linha[lida - 1] == '\n' || linha[lida - 1] == '\r')) // \r serve para compatibilidade com Windows
-            linha[--lida] = '\0';
-        }
-        // Guardar o cabeçalho (primeira linha) e continuar
-        if (!header_lido) {
-            header = g_strdup(linha);
-            header_lido = true;
-            // já não precisamos da cópia da linha original nesta iteração
-            g_free(linha_original);
-            continue;
-        }
-
-        // Dividir linha em campos (suporta aspas e vírgulas dentro de aspas)
-        char *fields[15];
-        int max_fields = 15;
-        int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
-
-        // Validar linha com o parser específico fornecido
-        ParseResultado *resultado = parse_reserva_line(fields, n_fields, gestorGlob);
-
-        if (!resultado || !parse_resultado_is_valid(resultado)) {
-            // Cria o ficheiro de erros se ainda não existir
-            if (!ficheiro_erros_ptr) {
-                ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
-                fwrite(header, 1, strlen(header), ficheiro_erros_ptr);
-                if (!ficheiro_erros_ptr) {
-                    fputs("Erro ao criar ficheiro de erros: ", stderr);
-                    fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
-                    fputc('\n', stderr);
-                    if (resultado) parse_resultado_destroy(resultado);
-                    g_free(linha_original);
-                    break;
-                }
-            }
-            // Escreve a linha inválida exatamente como lida (com terminadores originais)
-            if (linha_original) {
-                fwrite(linha_original, 1, original_len, ficheiro_erros_ptr);
-            } else {
-                // fallback: escreve versão já normalizada
-                fputs(linha, ficheiro_erros_ptr);
-                fputc('\n', ficheiro_erros_ptr);
-            }
-            if (resultado) parse_resultado_destroy(resultado);
-        } else {
-            // Adiciona entidade válida ao gestor
-            reserva_ptr_manager_add_from_ptr_adapter(gestor, parse_resultado_get_entidade(resultado));
-            contador_validos++;
-            parse_resultado_destroy(resultado);
-        }
-
-        // libertar cópia da linha
-        g_free(linha_original);
+    FILE *ficheiro_erros_ptr = fopen(ficheiro_erros, "w");
+    if (!ficheiro_erros_ptr) {
+        fputs("Erro ao criar ficheiro de erros: ", stderr);
+        fputs(ficheiro_erros ? ficheiro_erros : "<NULL>", stderr);
+        fputc('\n', stderr);
+        fclose(ficheiro);
+        return 0;
     }
 
-    // Fechar e libertar tudo
-    if (ficheiro_erros_ptr) fclose(ficheiro_erros_ptr);
-    g_free(header);
-    free(linha);
+    int contador_validos = csv_generic_parser(
+        ficheiro,
+        ficheiro_erros_ptr,
+        gestor,
+        gestorGlob,
+        NULL,
+        criar_reserva,
+        reserva_ptr_manager_add_from_ptr_adapter,
+        separador
+    );
+
+    fclose(ficheiro_erros_ptr);
     fclose(ficheiro);
 
     return contador_validos;
