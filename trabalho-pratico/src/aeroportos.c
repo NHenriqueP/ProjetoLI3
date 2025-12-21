@@ -78,3 +78,16 @@ int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize) {
     return n;
 }
 
+int airport_summary_delim(const Aeroporto *airport, char *buf, size_t bufsize, char sep) {
+    if (!airport || !buf || bufsize == 0) return 0;
+    int n = snprintf(buf, bufsize, "%s%c%s%c%s%c%s%c%s",
+                     airport->iata ? airport->iata : "", sep,
+                     airport->nome ? airport->nome : "", sep,
+                     airport->cidade ? airport->cidade : "", sep,
+                     airport->pais ? airport->pais : "", sep,
+                     airport->tipo ? airport->tipo : "");
+    if (n < 0) return 0;
+    if ((size_t)n >= bufsize) return 0; // truncado
+    return n;
+}
+

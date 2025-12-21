@@ -1,1 +1,1 @@
-BFT,Beaufort Executive Airport,Beaufort,US,49
+FAM;Farmington Regional Airport;Farmington;US;54

@@ -1,1 +1,1 @@
-VBA,Ann Airport,Aeng,MM,115
+LWM;Lawrence Municipal Airport;Lawrence;US;329

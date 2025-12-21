@@ -173,12 +173,15 @@ const Horario* voo_get_actual_departure(const Voo *voo) {
 }
 
 int validar_flight_id(const char *s) {
-	if (!s || strlen(s) != 7) return 0;
-	
+	if (!s) return 0;
+	size_t len = strlen(s);
+	// Fase 2: existem IDs com 7 ou 8 caracteres (2 letras + 5/6 dígitos)
+	if (len != 7 && len != 8) return 0;
+
 	for (int j = 0; j < 2; j++) {
 		if (!isupper((unsigned char)s[j])) return 0;
 	}
-	for (int i = 2; i < 7; i++) {
+	for (size_t i = 2; i < len; i++) {
 		if (!isdigit((unsigned char)s[i])) return 0;
 	}
 	return 1;

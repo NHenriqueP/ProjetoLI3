@@ -1,1 +1,1 @@
-AZI,Al Bateen Executive Airport,Abu Dhabi,AE,148
+CMI=University of Illinois Willard Airport=Savoy=US=234

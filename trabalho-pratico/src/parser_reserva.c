@@ -54,7 +54,7 @@ static char* trim_spaces(char *s) {
     return s;
 }
 
-static int extrair_ids_de_lista(const char *src, char ids[][8], int max_ids) {
+static int extrair_ids_de_lista(const char *src, char ids[][9], int max_ids) {
     if (!src || max_ids <= 0) return 0;
     char *copy = g_strdup(src);
     if (!copy) return 0;
@@ -71,8 +71,8 @@ static int extrair_ids_de_lista(const char *src, char ids[][8], int max_ids) {
             tok[lt - 1] = '\0'; tok++; lt -= 2;
         }
         tok = trim_spaces(tok);
-        if (lt >= 7) tok[7] = '\0';
-        g_strlcpy(ids[count], tok, 8);
+        if (lt >= 8) tok[8] = '\0';
+        g_strlcpy(ids[count], tok, 9);
         count++;
     }
     g_free(copy);
@@ -87,7 +87,7 @@ static int existe_flight_id(const char *id, SistemaGestor *gestor) {
 
 static int processar_e_validar_flights(const char *flight_ids_str, SistemaGestor *gestor) {
     if (!flight_ids_str || *flight_ids_str == '\0') return 0;
-    char ids[2][8] = {{0}};
+    char ids[2][9] = {{0}};
     int n = extrair_ids_de_lista(flight_ids_str, ids, 2);
     if (n < 1 || n > 2) return 0;
     for (int i = 0; i < n; i++) {
