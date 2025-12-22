@@ -120,6 +120,7 @@ void voo_destroy(Voo *voo) {
 	g_free(voo->iataorigem);
 	g_free(voo->iatadestino);
 	g_free(voo->aircraft);
+	g_free(voo->airline);
 	g_free(voo);
 }
 
