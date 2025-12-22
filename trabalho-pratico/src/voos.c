@@ -20,15 +20,11 @@ struct Voo {
     char *idvoo;
     Horario departure;
     Horario actualdeparture;
-    Horario arrival;
-    Horario actualarrival;
-    int gate;
     Status estado;
     char *iataorigem;
     char *iatadestino;
     char *aircraft;
-    char *airline;
-    char *tracking_url;
+	char *airline;
 };
 
 void horario_copy(Horario *dest, const Horario *src) {
@@ -124,24 +120,18 @@ void voo_destroy(Voo *voo) {
 	g_free(voo->iataorigem);
 	g_free(voo->iatadestino);
 	g_free(voo->aircraft);
-	g_free(voo->airline);
-	g_free(voo->tracking_url);
 	g_free(voo);
 }
 
 Voo* voo_create(const char *idvoo,
 				const Horario *departure,
 				const Horario *actualdeparture,
-				const Horario *arrival,
-				const Horario *actualarrival,
-				int gate,
 				Status estado,
 				const char *iataorigem,
 				const char *iatadestino,
 				const char *aircraft,
-				const char *airline,
-				const char *tracking_url) {
-	if (!idvoo || !departure || !arrival || !iataorigem || !iatadestino || !aircraft || !airline || !tracking_url) {
+				const char *airline) {
+	if (!idvoo || !departure || !actualdeparture || !iataorigem || !iatadestino || !aircraft || !airline) {
 		return NULL;
 	}
 	Voo *voo = g_new0(Voo, 1);
@@ -149,16 +139,12 @@ Voo* voo_create(const char *idvoo,
 	voo->idvoo = g_strdup(idvoo);
 	voo->departure = *departure;
 	voo->actualdeparture = *actualdeparture;
-	voo->arrival = *arrival;
-	voo->actualarrival = *actualarrival;
-	voo->gate = gate;
 	voo->estado = estado;
 	voo->iataorigem = g_strdup(iataorigem);
 	voo->iatadestino = g_strdup(iatadestino);
 	voo->aircraft = g_strdup(aircraft);
 	voo->airline = g_strdup(airline);
-	voo->tracking_url = g_strdup(tracking_url);
-	if (!voo->idvoo || !voo->iataorigem || !voo->iatadestino || !voo->aircraft || !voo->airline || !voo->tracking_url) {
+	if (!voo->idvoo || !voo->iataorigem || !voo->iatadestino || !voo->aircraft || !voo->airline) {
 		voo_destroy(voo);
 		return NULL;
 	}

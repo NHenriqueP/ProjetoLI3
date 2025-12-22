@@ -10,12 +10,7 @@ Passageiro* passageiro_create(
 	const char *first_name,
 	const char *last_name,
 	const char *dob,
-	const char *nationality,
-	const char *gender,	
-	const char *email,
-	const char *phone,
-	const char *address,
-	const char *photo
+	const char *nationality
 );
 void passageiro_destroy(Passageiro *passageiro);
 

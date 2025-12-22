@@ -22,15 +22,11 @@ void voo_destroy(Voo *voo);
 Voo* voo_create(const char *idvoo,
                 const Horario *departure,
                 const Horario *actualdeparture,
-                const Horario *arrival,
-                const Horario *actualarrival,
-                int gate,
                 Status estado,
                 const char *iataorigem,
                 const char *iatadestino,
                 const char *aircraft,
-                const char *airline,
-                const char *tracking_url);
+                const char *airline);
 
 void horario_free(Horario *h);
 void horario_copy(Horario *dest, const Horario *src);

@@ -7,11 +7,6 @@ struct Passageiro {
 	char *last_name;
 	char *dob;
 	char *nationality;
-	char *gender;
-	char *email;
-	char *phone;
-	char *address;
-	char *photo;
 };
 
 Passageiro* passageiro_create(
@@ -19,15 +14,10 @@ Passageiro* passageiro_create(
     const char *first_name,
     const char *last_name,
     const char *dob,
-    const char *nationality,
-    const char *gender,
-    const char *email,
-    const char *phone,
-    const char *address,
-    const char *photo
+    const char *nationality
 ) {
     if (!document_number || !first_name || !last_name || !dob ||
-        !nationality || !gender || !email || !phone || !address || !photo) {
+        !nationality) {
         return NULL;
     }   
     Passageiro *p = g_new0(Passageiro, 1);
@@ -37,11 +27,6 @@ Passageiro* passageiro_create(
     p->last_name = g_strdup(last_name);
     p->dob = g_strdup(dob);
     p->nationality = g_strdup(nationality);
-    p->gender = g_strdup(gender);   
-    p->email = g_strdup(email);
-    p->phone = g_strdup(phone);
-    p->address = g_strdup(address);
-    p->photo = g_strdup(photo);
     return p;   
 }
 
@@ -53,11 +38,6 @@ void passageiro_destroy(Passageiro *passageiro) {
     g_free(passageiro->last_name);
     g_free(passageiro->dob);
     g_free(passageiro->nationality);
-    g_free(passageiro->gender);
-    g_free(passageiro->email);
-    g_free(passageiro->phone);
-    g_free(passageiro->address);
-    g_free(passageiro->photo);
     g_free(passageiro);
 }
 

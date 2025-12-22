@@ -167,7 +167,8 @@ void* criar_voo(char **fields, int n_fields, void *ctx) {
         return NULL;
     }
 
-    Voo *v = voo_create(flight_id, dep, act_dep, arr, act_arr, (int)gate, st, origem, destino, aircraft, airline, url);
+
+    Voo *v = voo_create(flight_id, dep, act_dep, st, origem, destino, aircraft, airline);
     horario_free(dep);
     horario_free(act_dep);
     horario_free(arr);

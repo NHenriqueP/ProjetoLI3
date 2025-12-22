@@ -96,9 +96,6 @@ void* criar_aeroporto(char **fields, int n_fields, void *ctx) {
                             nome,
                             cidade,
                             pais,
-                            latitude,
-                            longitude,
-                            icao,
                             tipo);
 }
 

@@ -9,9 +9,6 @@ struct Aeroporto {
     char *nome;
     char *cidade;
     char *pais;
-    char *latitude;
-    char *longitude;
-    char *icao;
     char *tipo;
 };
 
@@ -19,11 +16,8 @@ Aeroporto* aeroporto_create(const char *iata,
                             const char *nome,
                             const char *cidade,
                             const char *pais,
-                            const char *latitude,
-                            const char *longitude,
-                            const char *icao,
                             const char *tipo) {
-    if (!iata || !nome || !cidade || !pais || !latitude || !longitude || !icao || !tipo) return NULL;
+    if (!iata || !nome || !cidade || !pais || !tipo) return NULL;
 
     Aeroporto *aeroporto = g_new0(Aeroporto, 1);
     if (!aeroporto) return NULL;
@@ -32,9 +26,6 @@ Aeroporto* aeroporto_create(const char *iata,
     aeroporto->nome = g_strdup(nome);
     aeroporto->cidade = g_strdup(cidade);
     aeroporto->pais = g_strdup(pais);
-    aeroporto->latitude = g_strdup(latitude);
-    aeroporto->longitude = g_strdup(longitude);
-    aeroporto->icao = g_strdup(icao);
     aeroporto->tipo = g_strdup(tipo);
 
     if (!aeroporto->iata) {
@@ -52,9 +43,6 @@ void aeroporto_destroy(Aeroporto *aeroporto) {
     g_free(aeroporto->nome);
     g_free(aeroporto->cidade);
     g_free(aeroporto->pais);
-    g_free(aeroporto->latitude);
-    g_free(aeroporto->longitude);
-    g_free(aeroporto->icao);
     g_free(aeroporto->tipo);
     g_free(aeroporto);
 }

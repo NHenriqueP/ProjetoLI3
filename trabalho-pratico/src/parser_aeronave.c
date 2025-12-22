@@ -43,16 +43,11 @@ void* criar_aeronave(char **fields, int n_fields, void *ctx) {
     if (!validar_numero(year_str) || !validar_numero(capacity_str) || !validar_numero(range_str)) return NULL;
 
     long year_long = strtol(year_str, NULL, 10);
-    long capacity_long = strtol(capacity_str, NULL, 10);
-    long range_long = strtol(range_str, NULL, 10);
-
     int year = (int)year_long;
-    int capacity = (int)capacity_long;
-    int range = (int)range_long;
-
+    
     if (year < 1900 || year > 2100) return NULL;
 
-    return aeronave_create(identifier, manufacturer, model, year, capacity, range);
+    return aeronave_create(identifier, manufacturer, model);
 }
 
 ParseResultado* parse_aeronave_line(char **fields, int n_fields) {

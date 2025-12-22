@@ -107,12 +107,7 @@ void* criar_passageiro(char **fields, int n_fields, void *ctx) {
         first_name,
         last_name,
         dob,
-        nationality,
-        gender,
-        email,
-        phone,
-        address,
-        photo
+        nationality
     );
 }
 

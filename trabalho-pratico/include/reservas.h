@@ -8,11 +8,7 @@ typedef struct Reserva Reserva;
 Reserva* reserva_create(const char *reservation_id,
                         const char *flight_ids,
                         const char *document_number,
-                        const char *seat,
-                        double price,
-                        bool extra_luggage,
-                        bool priority_boarding,
-                        const char *qr_code);
+                        double price);
 
 void reserva_destroy(Reserva *reserva);
 

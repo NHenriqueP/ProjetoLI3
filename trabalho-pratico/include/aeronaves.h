@@ -5,10 +5,7 @@ typedef struct Aeronave Aeronave;
 
 Aeronave* aeronave_create(const char *id,
 						  const char *fabricante,
-						  const char *modelo,
-						  int ano,
-						  int capacidade,
-						  int alcance);
+						  const char *modelo);
 
 void aeronave_destroy(Aeronave *a);
 

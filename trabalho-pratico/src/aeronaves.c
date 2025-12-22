@@ -7,17 +7,11 @@ struct Aeronave {
     char *id;
     char *fabricante;
     char *modelo;
-    int ano;
-    int capacidade;
-    int alcance;
 };
 
 Aeronave* aeronave_create(const char *id,
                           const char *fabricante,
-                          const char *modelo,
-                          int ano,
-                          int capacidade,
-                          int alcance) {
+                          const char *modelo) {
     if (!id || !fabricante || !modelo) return NULL;
 
     Aeronave *a = g_new0(Aeronave, 1);
@@ -26,9 +20,6 @@ Aeronave* aeronave_create(const char *id,
     a->id = g_strdup(id);
     a->fabricante = g_strdup(fabricante);
     a->modelo = g_strdup(modelo);
-    a->ano = ano;
-    a->capacidade = capacidade;
-    a->alcance = alcance;
 
     if (!a->id || !a->fabricante || !a->modelo) {
         aeronave_destroy(a);

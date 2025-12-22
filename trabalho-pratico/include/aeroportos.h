@@ -8,9 +8,6 @@ Aeroporto* aeroporto_create(const char *iata,
                          	   const char *nome,
                             const char *cidade,
                             const char *pais,
-                            const char *latitude,
-                            const char *longitude,
-                            const char *icao,
                             const char *tipo);
 
 void aeroporto_destroy(Aeroporto *aeroporto);

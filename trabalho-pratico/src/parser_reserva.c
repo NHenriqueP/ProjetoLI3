@@ -144,11 +144,7 @@ void* criar_reserva(char **fields, int n_fields, void *ctx) {
         reservation_id,
         flight_ids,
         document_number,
-        seat,
-        price,
-        extra_luggage,
-        priority_boarding,
-        qr_code
+        price  
     );
 }
 
