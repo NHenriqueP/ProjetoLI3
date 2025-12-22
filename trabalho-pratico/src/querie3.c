@@ -177,6 +177,11 @@ void execQ3(char linha[], SistemaGestor *gestor, int *Nout) {
         return;
     }
 
+    if (melhor && melhor->airport == NULL) {
+        Aeroporto *aero = airport_ptr_manager_find_by_iata(aero_manager, melhor->iata);
+        melhor->airport = aero;
+    }
+
     int wrote = 0;
 
     if (!melhor || melhor->count == 0 || !melhor->airport) {
