@@ -2,6 +2,7 @@
 #define VOO
 
 #include <stddef.h>
+#include <glib.h>
 
 typedef struct Date Date;
 
@@ -38,6 +39,8 @@ Date *date_new(void);
 const Date *horario_get_date(const Horario *h);
 Horario *horario_new(void);
 void set_date(Date *d, int year, int month, int day);
+void passar_date (Date *dest, const Date *src);
+gint comparar_dates_dia(gconstpointer a, gconstpointer b);
 void set_horario(Horario *h, int year, int month, int day, int hora, int minuto);
 int comparar_horarios(const Horario *a, const Horario *b);
 int comparar_dates(const Date *a, const Date *b);

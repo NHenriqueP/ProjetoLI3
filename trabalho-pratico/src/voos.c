@@ -3,18 +3,18 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-	struct Date {
+struct Date {
 		int year, month, day;
-	};
+};
 
-	struct Hora {
+struct Hora {
 		int hora, minuto;
-	};
+};
 
-	struct Horario {
+struct Horario {
 		Date data;
 		Hora hora;
-	};
+};
 
 struct Voo {
     char *idvoo;
@@ -73,6 +73,13 @@ void set_date(Date *d, int year, int month, int day) {
 	d->day = day;
 }
 
+void passar_date (Date *dest, const Date *src) {
+	if (!dest || !src) return;
+	dest->year = src->year;
+	dest->month = src->month;
+	dest->day = src->day;
+}
+
 void set_horario(Horario *h, int year, int month, int day, int hora, int minuto) {
 	if (!h) return;
 	h->data.year = year;
@@ -89,6 +96,16 @@ int comparar_dates(const Date *a, const Date *b) {
 	return 0;
 }
 
+// Nova função de comparação para a GTree
+gint comparar_dates_dia(gconstpointer a, gconstpointer b) {
+    const Date *d1 = (const Date*)a; 
+    const Date *d2 = (const Date*)b;
+
+    if (d1->year != d2->year) return d1->year - d2->year;
+    if (d1->month != d2->month) return d1->month - d2->month;
+    return d1->day - d2->day;
+}
+
 int comparar_horarios(const Horario *a, const Horario *b) {
 	if (!a || !b) return 0;
 	if (a->data.year != b->data.year) return (a->data.year > b->data.year) ? 1 : -1;
@@ -98,6 +115,7 @@ int comparar_horarios(const Horario *a, const Horario *b) {
 	if (a->hora.minuto != b->hora.minuto) return (a->hora.minuto > b->hora.minuto) ? 1 : -1;
 	return 0;
 }
+
 
 void voo_destroy(Voo *voo) {
 	if (!voo) return;

@@ -6,7 +6,13 @@
 struct voo_ptr_manager {
     GArray *flights;
     GHashTable *by_id;
+    GTree *voos_por_data;
 };
+
+GTree * manager_get_voos_por_data(VooPtrManager *manager) {
+    if (!manager) return NULL;
+    return manager->voos_por_data;
+}
 
 VooPtrManager* voo_ptr_manager_create() {
     VooPtrManager *m = malloc(sizeof(VooPtrManager));
@@ -14,10 +20,12 @@ VooPtrManager* voo_ptr_manager_create() {
 
     m->flights = g_array_new(FALSE, FALSE, sizeof(Voo*));
     m->by_id = g_hash_table_new(g_str_hash, g_str_equal);
+    m->voos_por_data = g_tree_new_full((GCompareDataFunc)comparar_dates_dia, NULL, g_free, (GDestroyNotify)g_ptr_array_unref);
 
-    if (!m->flights || !m->by_id) {
+    if (!m->flights || !m->by_id || !m->voos_por_data) {
         if (m->flights) g_array_free(m->flights, TRUE);
         if (m->by_id) g_hash_table_destroy(m->by_id);
+        if (m->voos_por_data) g_tree_destroy(m->voos_por_data);
         free(m);
         return NULL;
     }
@@ -37,6 +45,7 @@ void voo_ptr_manager_destroy(VooPtrManager *manager) {
     }
 
     if (manager->by_id) g_hash_table_destroy(manager->by_id);
+    if (manager->voos_por_data) g_tree_destroy(manager->voos_por_data);
     free(manager);
 }
 
@@ -51,6 +60,25 @@ int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
         return 1;
     }
 
+    if (voo_get_status(voo) != CANCELLED) {
+
+    Date *data_acDeparture = (Date*)horario_get_date(voo_get_actual_departure(voo));
+    Date *key_dia = date_new();
+    passar_date(key_dia, data_acDeparture);
+
+    GPtrArray *lista_do_dia = g_tree_lookup(manager->voos_por_data, key_dia);
+    
+    if (lista_do_dia) {
+        g_ptr_array_add(lista_do_dia, voo);
+        g_free(key_dia);
+    }
+    else {
+        lista_do_dia = g_ptr_array_new();
+        g_ptr_array_add(lista_do_dia, voo);
+        g_tree_insert(manager->voos_por_data, key_dia, lista_do_dia);
+    }
+    
+    }
     g_array_append_val(manager->flights, voo);
     g_hash_table_insert(manager->by_id, (gpointer)id, voo);
     return 1;

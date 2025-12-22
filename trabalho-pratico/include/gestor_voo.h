@@ -10,7 +10,7 @@ VooPtrManager* voo_ptr_manager_create();
 void voo_ptr_manager_destroy(VooPtrManager *manager);
 int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade);
 Voo* voo_ptr_manager_find_by_id(VooPtrManager *manager, const char *id);
-
+GTree * manager_get_voos_por_data(VooPtrManager *manager);
 guint voo_ptr_manager_count(const VooPtrManager *manager);
 const Voo* voo_ptr_manager_get(const VooPtrManager *manager, guint index);
 
