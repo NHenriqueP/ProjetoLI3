@@ -29,7 +29,7 @@ gint compare_aircraft_counts(gconstpointer a, gconstpointer b) {
     return strcmp(id_lhs, id_rhs);
 }
 
-static int escrever_resultados(const GPtrArray *ordenado, int limite, const char *caminho_output) {
+static int escrever_resultados(const GPtrArray *ordenado, int limite, const char *caminho_output, char sep) {
     FILE *output = fopen(caminho_output, "w");
     if (!output) return 0;
     if (!ordenado || limite <= 0 || ordenado->len == 0) {
@@ -49,8 +49,8 @@ static int escrever_resultados(const GPtrArray *ordenado, int limite, const char
         if (!id) id = "";
         if (!fabricante) fabricante = "";
         if (!modelo) modelo = "";
-        fprintf(output, "%s,%s,%s,%d\n", id, fabricante, modelo, entry->count);
-    }
+        fprintf(output, "%s%c%s%c%s%c%d\n", id, sep, fabricante, sep, modelo, sep, entry->count);
+        }
     fclose(output);
     return 1;
 }
@@ -74,8 +74,20 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
     if (!linha || !gestor || !Nout) return;
     if (linha[0] != '2') return;
 
+    char sep = ';';
+
     char *cursor = trim_leading_ws(linha + 1);
     if (!cursor || *cursor == '\0') return;
+
+    // Novo modo: se existir um token 'S' depois do 1, usar '=' como separador.
+    // Aceita: "1S <IATA>" e "1 S <IATA>".
+    // Não deve confundir com IATA a começar por 'S' (ex.: "1 SFO").
+    if ((*cursor == 'S' || *cursor == 's') && (cursor[1] == '\0' || g_ascii_isspace(cursor[1]))) {
+        sep = '=';
+        cursor = trim_leading_ws(cursor + 1);
+        if (!cursor || *cursor == '\0') return;
+    }
+
 
     char *endptr = NULL;
     long parsed = strtol(cursor, &endptr, 10);
@@ -97,7 +109,7 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
     snprintf(caminho_output, sizeof(caminho_output), "resultados/command%d_output.txt", *Nout);
 
     if (!voos_manager || !aeronaves_manager || aeronave_ptr_manager_count(aeronaves_manager) == 0) {
-        if (escrever_resultados(NULL, 0, caminho_output)) (*Nout)++;
+        if (escrever_resultados(NULL, 0, caminho_output, sep)) (*Nout)++;
         return;
     }
 
@@ -142,7 +154,7 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
 
     g_ptr_array_sort(ordenado, compare_aircraft_counts);
 
-    int wrote = escrever_resultados(ordenado, (int)parsed, caminho_output);
+    int wrote = escrever_resultados(ordenado, (int)parsed, caminho_output, sep);
 
     g_ptr_array_free(ordenado, TRUE);
     g_hash_table_destroy(contagens);
