@@ -47,6 +47,16 @@ static gint compare_delay_views(gconstpointer a, gconstpointer b) {
 
 static GPtrArray *cached_sorted_views = NULL; // AirlineDelayView*
 
+void querie5_cleanup_cache(void) {
+	if (!cached_sorted_views) return;
+	for (guint i = 0; i < cached_sorted_views->len; i++) {
+		AirlineDelayView *view = g_ptr_array_index(cached_sorted_views, i);
+		g_free(view);
+	}
+	g_ptr_array_free(cached_sorted_views, TRUE);
+	cached_sorted_views = NULL;
+}
+
 static void build_cached_sorted_views(VooPtrManager *voos_manager) {
 	if (cached_sorted_views) return;
 	if (!voos_manager) {

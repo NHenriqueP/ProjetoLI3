@@ -6,6 +6,8 @@
 #include "gestor_passageiro.h"
 #include "gestor_reserva.h"
 #include "querie4.h"
+#include "querie5.h"
+#include "querie6.h"
 #include "querie1.h"
 
 struct SistemaGestor {
@@ -22,6 +24,8 @@ void destruir_gestor_global(SistemaGestor *gestorGlobal) {
     // Libertar caches internas de queries (se existirem)
     querie1_cleanup_cache();
     querie4_cleanup_cache();
+    querie5_cleanup_cache();
+    querie6_cleanup_cache();
 
     airport_ptr_manager_destroy(gestorGlobal->aeroportos); 
     voo_ptr_manager_destroy(gestorGlobal->voos);

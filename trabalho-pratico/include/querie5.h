@@ -8,4 +8,7 @@
 // Output: airline<sep>delayed_flights_count<sep>average_delay (3 casas decimais)
 void execQ5(char linha[], SistemaGestor *gestor, int *Nout);
 
+// Libertar cache interna da Query 5 (se existir)
+void querie5_cleanup_cache(void);
+
 #endif
