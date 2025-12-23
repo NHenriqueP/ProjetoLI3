@@ -56,4 +56,11 @@ const char* voo_get_tracking_url(const Voo *voo);
 int validar_flight_id(const char *s);
 int voo_summary(const Voo *voo, char *buf, size_t bufsize);
 
+// Diferença, em minutos, entre a hora real e estimada de partida (actualdeparture - departure).
+// Útil para queries que calculam atraso sem expor a estrutura interna de Horario.
+long long voo_get_departure_delay_minutes(const Voo *voo);
+
+// Número de dias desde 1970-01-01 para a data de partida estimada (departure).
+long long voo_get_departure_day_number(const Voo *voo);
+
 #endif

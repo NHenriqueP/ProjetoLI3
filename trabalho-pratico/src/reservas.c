@@ -55,3 +55,7 @@ const char* reserva_get_document_number(const Reserva *reserva) {
 	if (reserva) return reserva->document_number;
 	return NULL;
 }
+
+double reserva_get_price(const Reserva *reserva) {
+	return reserva ? reserva->price : 0.0;
+}

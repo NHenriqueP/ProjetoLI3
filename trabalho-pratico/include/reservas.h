@@ -20,4 +20,7 @@ const char* reserva_get_flight_ids(const Reserva *reserva);
 // Documento do passageiro associado à reserva
 const char* reserva_get_document_number(const Reserva *reserva);
 
+// Preço total da reserva.
+double reserva_get_price(const Reserva *reserva);
+
 #endif

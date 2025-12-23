@@ -45,3 +45,19 @@ const char* get_passageiro_document_number(const Passageiro *passageiro) {
     if (passageiro) return passageiro->document_number;
     return NULL;
 }
+
+const char* passageiro_get_first_name(const Passageiro *passageiro) {
+    return passageiro ? passageiro->first_name : NULL;
+}
+
+const char* passageiro_get_last_name(const Passageiro *passageiro) {
+    return passageiro ? passageiro->last_name : NULL;
+}
+
+const char* passageiro_get_dob(const Passageiro *passageiro) {
+    return passageiro ? passageiro->dob : NULL;
+}
+
+const char* passageiro_get_nationality(const Passageiro *passageiro) {
+    return passageiro ? passageiro->nationality : NULL;
+}

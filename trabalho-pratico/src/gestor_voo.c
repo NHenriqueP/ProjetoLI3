@@ -7,7 +7,20 @@ struct voo_ptr_manager {
     GArray *flights;
     GHashTable *by_id;
     GTree *voos_por_data;
+    GHashTable *delay_stats_by_airline;
 };
+
+static void airline_delay_stats_free(gpointer data) {
+    AirlineDelayStats *s = (AirlineDelayStats*)data;
+    if (!s) return;
+    g_free(s->airline);
+    g_free(s);
+}
+
+GHashTable *voo_ptr_manager_get_delay_stats_by_airline(VooPtrManager *manager) {
+    if (!manager) return NULL;
+    return manager->delay_stats_by_airline;
+}
 
 GTree * manager_get_voos_por_data(VooPtrManager *manager) {
     if (!manager) return NULL;
@@ -21,11 +34,13 @@ VooPtrManager* voo_ptr_manager_create() {
     m->flights = g_array_new(FALSE, FALSE, sizeof(Voo*));
     m->by_id = g_hash_table_new(g_str_hash, g_str_equal);
     m->voos_por_data = g_tree_new_full((GCompareDataFunc)comparar_dates_dia, NULL, g_free, (GDestroyNotify)g_ptr_array_unref);
+	m->delay_stats_by_airline = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, airline_delay_stats_free);
 
-    if (!m->flights || !m->by_id || !m->voos_por_data) {
+    if (!m->flights || !m->by_id || !m->voos_por_data || !m->delay_stats_by_airline) {
         if (m->flights) g_array_free(m->flights, TRUE);
         if (m->by_id) g_hash_table_destroy(m->by_id);
         if (m->voos_por_data) g_tree_destroy(m->voos_por_data);
+		if (m->delay_stats_by_airline) g_hash_table_destroy(m->delay_stats_by_airline);
         free(m);
         return NULL;
     }
@@ -46,6 +61,7 @@ void voo_ptr_manager_destroy(VooPtrManager *manager) {
 
     if (manager->by_id) g_hash_table_destroy(manager->by_id);
     if (manager->voos_por_data) g_tree_destroy(manager->voos_por_data);
+	if (manager->delay_stats_by_airline) g_hash_table_destroy(manager->delay_stats_by_airline);
     free(manager);
 }
 
@@ -58,6 +74,30 @@ int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
     if (manager->by_id && g_hash_table_lookup(manager->by_id, id)) {
         voo_destroy(voo);
         return 1;
+    }
+
+    // Atualizar estatísticas de atraso por companhia (apenas DELAYED)
+    if (manager->delay_stats_by_airline && voo_get_status(voo) == DELAYED) {
+        const char *airline = voo_get_airline(voo);
+        if (airline && airline[0] != '\0') {
+            AirlineDelayStats *s = g_hash_table_lookup(manager->delay_stats_by_airline, airline);
+            if (!s) {
+                s = g_new0(AirlineDelayStats, 1);
+                s->airline = g_strdup(airline);
+                s->delayed_flights_count = 0;
+                s->total_delay_minutes = 0;
+                if (s->airline) {
+                    g_hash_table_insert(manager->delay_stats_by_airline, s->airline, s);
+                } else {
+                    airline_delay_stats_free(s);
+                    s = NULL;
+                }
+            }
+            if (s) {
+                s->delayed_flights_count++;
+                s->total_delay_minutes += voo_get_departure_delay_minutes(voo);
+            }
+        }
     }
 
     if (voo_get_status(voo) != CANCELLED) {

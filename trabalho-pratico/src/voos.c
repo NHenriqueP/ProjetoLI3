@@ -27,6 +27,22 @@ struct Voo {
 	char *airline;
 };
 
+static long long days_from_civil(int y, unsigned m, unsigned d) {
+	// Howard Hinnant's algorithm: days since 1970-01-01.
+	y -= (m <= 2);
+	const int era = (y >= 0 ? y : y - 399) / 400;
+	const unsigned yoe = (unsigned)(y - era * 400);
+	const unsigned doy = (153 * (m + (m > 2 ? (unsigned)-3 : 9)) + 2) / 5 + d - 1;
+	const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+	return (long long)(era * 146097 + (int)doe - 719468);
+}
+
+static long long horario_to_minutes(const Horario *h) {
+	if (!h) return 0;
+	long long days = days_from_civil(h->data.year, (unsigned)h->data.month, (unsigned)h->data.day);
+	return days * 1440LL + (long long)h->hora.hora * 60LL + (long long)h->hora.minuto;
+}
+
 void horario_copy(Horario *dest, const Horario *src) {
     dest->data = src->data;
     dest->hora = src->hora;
@@ -157,6 +173,10 @@ const char* voo_get_id(const Voo *voo) {
 	return NULL;
 }
 
+const Horario* voo_get_departure(const Voo *voo) {
+	return voo ? &voo->departure : NULL;
+}
+
 Status voo_get_status(const Voo *voo) {
 	return voo ? voo->estado : ON_TIME;
 }
@@ -175,6 +195,22 @@ const char* voo_get_iata_destino(const Voo *voo) {
 
 const Horario* voo_get_actual_departure(const Voo *voo) {
 	return voo ? &voo->actualdeparture : NULL;
+}
+
+const char* voo_get_airline(const Voo *voo) {
+	return voo ? voo->airline : NULL;
+}
+
+long long voo_get_departure_delay_minutes(const Voo *voo) {
+	if (!voo) return 0;
+	// actualdeparture - departure
+	return horario_to_minutes(&voo->actualdeparture) - horario_to_minutes(&voo->departure);
+}
+
+long long voo_get_departure_day_number(const Voo *voo) {
+	if (!voo) return 0;
+	// days since 1970-01-01
+	return days_from_civil(voo->departure.data.year, (unsigned)voo->departure.data.month, (unsigned)voo->departure.data.day);
 }
 
 int validar_flight_id(const char *s) {

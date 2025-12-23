@@ -12,8 +12,10 @@
 #include "querie1.h"
 #include "querie2.h"
 #include "querie3.h"
+#include "querie4.h"
 #include "gestor_reserva.h"
 #include "gestor_voo.h"
+#include "querie5.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -151,6 +153,10 @@ int executar_querry(char linha[], SistemaGestor *gestor, int *Nout) {
         execQ2(linha, gestor, Nout);
     } else if (linha[0] == '3') {
         execQ3(linha, gestor, Nout);
+	} else if (linha[0] == '4') {
+		execQ4(linha, gestor, Nout);
+	} else if (linha[0] == '5') {
+		execQ5(linha, gestor, Nout);
     }
 
     return 1;
