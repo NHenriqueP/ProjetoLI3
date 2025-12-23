@@ -66,3 +66,13 @@ int passageiro_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entida
     g_hash_table_insert(manager->by_doc, (gpointer)doc_number, passageiro);
     return 1;
 }
+
+guint passageiro_ptr_manager_count(const PassageiroPtrManager *manager) {
+    if (!manager || !manager->passageiros) return 0;
+    return manager->passageiros->len;
+}
+
+const Passageiro* passageiro_ptr_manager_get(const PassageiroPtrManager *manager, guint index) {
+    if (!manager || !manager->passageiros || index >= manager->passageiros->len) return NULL;
+    return g_array_index(manager->passageiros, Passageiro*, index);
+}
