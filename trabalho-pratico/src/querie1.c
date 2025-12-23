@@ -3,6 +3,7 @@
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include "aeroportos.h"
 #include "gestor_aeroporto.h"
 #include "gestor_reserva.h"
@@ -28,68 +29,131 @@ static char *skip_spaces(char *s) {
 
 // Extrai até max_ids flight ids de uma string no formato "['AB12345', 'CD67890']"
 // Nota: fase 2 tem flight ids com 7 ou 8 caracteres.
-static int extract_flight_ids(const char *src, char ids[][9], int max_ids) {
+static int extract_flight_ids_fast(const char *src, char ids[][9], int max_ids) {
     if (!src || max_ids <= 0) return 0;
-    char *copy = g_strdup(src);
-    if (!copy) return 0;
-
-    char *s = trim_spaces(copy);
-    if (*s == '[') {
-        size_t L = strlen(s);
-        if (L > 0 && s[L - 1] == ']') { s[L - 1] = '\0'; s++; }
-    }
-
     int count = 0;
-    for (char *tok = strtok(s, ","); tok && count < max_ids; tok = strtok(NULL, ",")) {
-        tok = trim_spaces(tok);
-        size_t lt = strlen(tok);
-        if (lt >= 2 && ((tok[0] == '\'' && tok[lt - 1] == '\'') || (tok[0] == '"' && tok[lt - 1] == '"'))) {
-            tok[lt - 1] = '\0'; tok++; lt -= 2;
+    const char *p = src;
+    while (*p && count < max_ids) {
+        while (*p && *p != '\'' && *p != '"') p++;
+        if (!*p) break;
+        char quote = *p++;
+        int i = 0;
+        while (*p && *p != quote && i < 8) {
+            ids[count][i++] = *p++;
         }
-        tok = trim_spaces(tok);
-        if (lt >= 8) tok[8] = '\0';
-        g_strlcpy(ids[count], tok, 9);
-        count++;
+        ids[count][i] = '\0';
+        // avançar até fechar aspas
+        while (*p && *p != quote) p++;
+        if (*p == quote) p++;
+        if (i == 7 || i == 8) count++;
     }
-
-    g_free(copy);
     return count;
 }
 
-static void contar_passageiros(const char *codigo_iata,
-                               SistemaGestor *gestor,
-                               long *aterragens,
-                               long *partidas) {
-    if (!codigo_iata || !gestor || !aterragens || !partidas) return;
+typedef struct {
+    long aterragem;
+    long partida;
+} Q1Counts;
+
+typedef struct {
+    GHashTable *iata_to_counts; // key: char* (IATA), value: Q1Counts*
+    gboolean built;
+} Q1Cache;
+
+static Q1Cache *q1_cache = NULL;
+
+static void q1_cache_free(Q1Cache *c) {
+    if (!c) return;
+    if (c->iata_to_counts) g_hash_table_destroy(c->iata_to_counts);
+    g_free(c);
+}
+
+void querie1_cleanup_cache(void) {
+    q1_cache_free(q1_cache);
+    q1_cache = NULL;
+}
+
+static Q1Counts *q1_get_or_create_counts(const char *iata) {
+    if (!q1_cache || !q1_cache->iata_to_counts || !iata || iata[0] == '\0') return NULL;
+    Q1Counts *c = g_hash_table_lookup(q1_cache->iata_to_counts, iata);
+    if (c) return c;
+    char *k = g_strdup(iata);
+    if (!k) return NULL;
+    c = g_new0(Q1Counts, 1);
+    if (!c) {
+        g_free(k);
+        return NULL;
+    }
+    g_hash_table_insert(q1_cache->iata_to_counts, k, c);
+    return c;
+}
+
+static void q1_build_cache_if_needed(SistemaGestor *gestor) {
+    if (q1_cache && q1_cache->built) return;
+    if (!q1_cache) {
+        q1_cache = g_new0(Q1Cache, 1);
+        if (!q1_cache) return;
+        q1_cache->iata_to_counts = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+        q1_cache->built = FALSE;
+        if (!q1_cache->iata_to_counts) {
+            querie1_cleanup_cache();
+            return;
+        }
+    }
+    if (!gestor) {
+        q1_cache->built = TRUE;
+        return;
+    }
 
     ReservaPtrManager *reservas_manager = gestor_global_get_reservas(gestor);
     VooPtrManager *voos_manager = gestor_global_get_voos(gestor);
-    if (!reservas_manager || !voos_manager) return;
+    if (!reservas_manager || !voos_manager) {
+        q1_cache->built = TRUE;
+        return;
+    }
 
     guint total_reservas = reserva_ptr_manager_count(reservas_manager);
     for (guint i = 0; i < total_reservas; i++) {
         const Reserva *reserva = reserva_ptr_manager_get(reservas_manager, i);
         if (!reserva) continue;
-
         const char *flight_ids_raw = reserva_get_flight_ids(reserva);
         if (!flight_ids_raw || flight_ids_raw[0] == '\0') continue;
 
         char ids[2][9] = {{0}};
-        int n_ids = extract_flight_ids(flight_ids_raw, ids, 2);
+        int n_ids = extract_flight_ids_fast(flight_ids_raw, ids, 2);
         if (n_ids <= 0) continue;
 
         for (int j = 0; j < n_ids; j++) {
             const Voo *voo = voo_ptr_manager_find_by_id(voos_manager, ids[j]);
             if (!voo) continue;
             if (voo_get_status(voo) == CANCELLED) continue;
-
             const char *origem = voo_get_iata_origem(voo);
             const char *destino = voo_get_iata_destino(voo);
-
-            if (origem && strcmp(origem, codigo_iata) == 0) (*partidas)++;
-            if (destino && strcmp(destino, codigo_iata) == 0) (*aterragens)++;
+            if (origem && origem[0] != '\0') {
+                Q1Counts *c = q1_get_or_create_counts(origem);
+                if (c) c->partida++;
+            }
+            if (destino && destino[0] != '\0') {
+                Q1Counts *c = q1_get_or_create_counts(destino);
+                if (c) c->aterragem++;
+            }
         }
     }
+
+    q1_cache->built = TRUE;
+}
+
+static void q1_lookup_counts(SistemaGestor *gestor, const char *codigo_iata, long *aterragens, long *partidas) {
+	if (!aterragens || !partidas) return;
+	*aterragens = 0;
+	*partidas = 0;
+	if (!codigo_iata || codigo_iata[0] == '\0') return;
+	q1_build_cache_if_needed(gestor);
+	if (!q1_cache || !q1_cache->iata_to_counts) return;
+	Q1Counts *c = g_hash_table_lookup(q1_cache->iata_to_counts, codigo_iata);
+	if (!c) return;
+	*aterragens = c->aterragem;
+	*partidas = c->partida;
 }
 
 void execQ1(char linha[],SistemaGestor *gestor, int *Nout) {
@@ -138,7 +202,7 @@ void execQ1(char linha[],SistemaGestor *gestor, int *Nout) {
         char buf[512];
         long aterragem = 0;
         long partida = 0;
-        contar_passageiros(codigo_iata, gestor, &aterragem, &partida);
+        q1_lookup_counts(gestor, codigo_iata, &aterragem, &partida);
 
         if (airport_summary_delim(aeroporto_ptr, buf, sizeof(buf), sep) > 0) {
             fprintf(output_file, "%s%c%ld%c%ld\n", buf, sep, aterragem, sep, partida);
