@@ -26,4 +26,7 @@ const Voo* voo_ptr_manager_get(const VooPtrManager *manager, guint index);
 // Nota: retorno é propriedade do manager; tratar como read-only.
 GHashTable *voo_ptr_manager_get_delay_stats_by_airline(VooPtrManager *manager);
 
+// Contagem de voos por aeronave (exclui CANCELLED), agregada no carregamento.
+long voo_ptr_manager_get_flight_count_by_aircraft(VooPtrManager *manager, const char *aircraft_id);
+
 #endif

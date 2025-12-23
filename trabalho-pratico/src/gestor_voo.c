@@ -8,6 +8,7 @@ struct voo_ptr_manager {
     GHashTable *by_id;
     GTree *voos_por_data;
     GHashTable *delay_stats_by_airline;
+    GHashTable *flight_count_by_aircraft;
 };
 
 static void airline_delay_stats_free(gpointer data) {
@@ -20,6 +21,12 @@ static void airline_delay_stats_free(gpointer data) {
 GHashTable *voo_ptr_manager_get_delay_stats_by_airline(VooPtrManager *manager) {
     if (!manager) return NULL;
     return manager->delay_stats_by_airline;
+}
+
+long voo_ptr_manager_get_flight_count_by_aircraft(VooPtrManager *manager, const char *aircraft_id) {
+    if (!manager || !manager->flight_count_by_aircraft || !aircraft_id || aircraft_id[0] == '\0') return 0;
+    const gint *p = g_hash_table_lookup(manager->flight_count_by_aircraft, aircraft_id);
+    return p ? (long)(*p) : 0;
 }
 
 GTree * manager_get_voos_por_data(VooPtrManager *manager) {
@@ -35,12 +42,14 @@ VooPtrManager* voo_ptr_manager_create() {
     m->by_id = g_hash_table_new(g_str_hash, g_str_equal);
     m->voos_por_data = g_tree_new_full((GCompareDataFunc)comparar_dates_dia, NULL, g_free, (GDestroyNotify)g_ptr_array_unref);
 	m->delay_stats_by_airline = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, airline_delay_stats_free);
+	m->flight_count_by_aircraft = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
-    if (!m->flights || !m->by_id || !m->voos_por_data || !m->delay_stats_by_airline) {
+    if (!m->flights || !m->by_id || !m->voos_por_data || !m->delay_stats_by_airline || !m->flight_count_by_aircraft) {
         if (m->flights) g_array_free(m->flights, TRUE);
         if (m->by_id) g_hash_table_destroy(m->by_id);
         if (m->voos_por_data) g_tree_destroy(m->voos_por_data);
 		if (m->delay_stats_by_airline) g_hash_table_destroy(m->delay_stats_by_airline);
+		if (m->flight_count_by_aircraft) g_hash_table_destroy(m->flight_count_by_aircraft);
         free(m);
         return NULL;
     }
@@ -50,6 +59,11 @@ VooPtrManager* voo_ptr_manager_create() {
 
 void voo_ptr_manager_destroy(VooPtrManager *manager) {
     if (!manager) return;
+
+    if (manager->flight_count_by_aircraft) {
+        g_hash_table_destroy(manager->flight_count_by_aircraft);
+        manager->flight_count_by_aircraft = NULL;
+    }
 
     if (manager->flights) {
         for (guint i = 0; i < manager->flights->len; i++) {
@@ -97,6 +111,26 @@ int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
                 s->delayed_flights_count++;
                 s->total_delay_minutes += voo_get_departure_delay_minutes(voo);
             }
+        }
+    }
+
+    // Atualizar contagem de voos por aeronave (exclui CANCELLED), para acelerar a Query 2
+    if (manager->flight_count_by_aircraft && voo_get_status(voo) != CANCELLED) {
+        const char *aircraft_id = voo_get_aircraft(voo);
+        if (aircraft_id && aircraft_id[0] != '\0') {
+            gint *p = g_hash_table_lookup(manager->flight_count_by_aircraft, aircraft_id);
+            if (!p) {
+                char *key_copy = g_strdup(aircraft_id);
+                p = g_new0(gint, 1);
+                if (key_copy && p) {
+                    g_hash_table_insert(manager->flight_count_by_aircraft, key_copy, p);
+                } else {
+                    if (key_copy) g_free(key_copy);
+                    if (p) g_free(p);
+                    p = NULL;
+                }
+            }
+            if (p) (*p)++;
         }
     }
 

@@ -113,8 +113,9 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
         return;
     }
 
-    GHashTable *contagens = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
-
+    // Construir diretamente o array de contagens, usando o agregado no gestor de voos.
+    // Evita varrer todos os voos a cada execução da query.
+    GPtrArray *ordenado = g_ptr_array_new_with_free_func(g_free);
     guint total_aeronaves = aeronave_ptr_manager_count(aeronaves_manager);
     for (guint i = 0; i < total_aeronaves; i++) {
         const Aeronave *a = aeronave_ptr_manager_get(aeronaves_manager, i);
@@ -125,31 +126,16 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
             const char *fab = aeronave_get_fabricante(a);
             if (!fab || g_ascii_strcasecmp(fab, manufacturer) != 0) continue;
         }
+
+        long c = voo_ptr_manager_get_flight_count_by_aircraft(voos_manager, id);
+        if (c <= 0) continue;
+
         AircraftCount *entry = g_new0(AircraftCount, 1);
-        entry->aeronave = a;
-        g_hash_table_insert(contagens, (gpointer)id, entry);
-    }
-
-    guint total_voos = voo_ptr_manager_count(voos_manager);
-    for (guint i = 0; i < total_voos; i++) {
-        const Voo *voo = voo_ptr_manager_get(voos_manager, i);
-        if (!voo) continue;
-        if (voo_get_status(voo) == CANCELLED) continue;
-        const char *aircraft_id = voo_get_aircraft(voo);
-        if (!aircraft_id || aircraft_id[0] == '\0') continue;
-
-        AircraftCount *entry = g_hash_table_lookup(contagens, aircraft_id);
         if (!entry) continue;
-        entry->count++;
-    }
-
-    GPtrArray *ordenado = g_ptr_array_new();
-    GHashTableIter iter;
-    gpointer key, value;
-    g_hash_table_iter_init(&iter, contagens);
-    while (g_hash_table_iter_next(&iter, &key, &value)) {
-        AircraftCount *entry = value;
-        if (entry && entry->count > 0) g_ptr_array_add(ordenado, entry);
+        entry->aeronave = a;
+        if (c > INT_MAX) c = INT_MAX;
+        entry->count = (int)c;
+        g_ptr_array_add(ordenado, entry);
     }
 
     g_ptr_array_sort(ordenado, compare_aircraft_counts);
@@ -157,7 +143,6 @@ void execQ2(char linha[], SistemaGestor *gestor, int *Nout) {
     int wrote = escrever_resultados(ordenado, (int)parsed, caminho_output, sep);
 
     g_ptr_array_free(ordenado, TRUE);
-    g_hash_table_destroy(contagens);
 
     if (wrote) (*Nout)++;
 }
