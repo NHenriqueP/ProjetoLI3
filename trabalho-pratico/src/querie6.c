@@ -13,9 +13,9 @@
 #include "voos.h"
 #include "passageiros.h"
 
-// Cache: nationality -> (airport_iata -> count)
+// Cache: nationality -> (airport_iata -> count of landings)
 typedef struct {
-	GHashTable *nat_to_airport_counts; // key: char*, value: GHashTable* (key: char*, value: gint*)
+	GHashTable *nat_to_airport_counts; // key: char*, value: GHashTable* (key: char* airport, value: gint*)
 	gboolean built;
 } Q6Cache;
 
@@ -148,7 +148,7 @@ static void build_cache_if_needed(SistemaGestor *gestor) {
 		int n_ids = extract_flight_ids(flight_ids_raw, ids, 2);
 		if (n_ids <= 0) continue;
 
-		// Para cada voo da reserva, contar destino (se não cancelado)
+		// Para CADA voo da reserva, contar o destino (cada aterragem conta)
 		for (int j = 0; j < n_ids; j++) {
 			const Voo *voo = voo_ptr_manager_find_by_id(voos_m, ids[j]);
 			if (!voo) continue;
@@ -197,15 +197,20 @@ void execQ6(char linha[], SistemaGestor *gestor, int *Nout) {
 	char caminho_output[256];
 	snprintf(caminho_output, sizeof(caminho_output), "resultados/command%d_output.txt", *Nout);
 
+	char sep = ';';
 	const char *cursor = skip_spaces_const(linha + 1);
 	if (!cursor || *cursor == '\0') {
 		if (write_blank_line(caminho_output)) (*Nout)++;
 		return;
 	}
+	if ((*cursor == 'S' || *cursor == 's') && (cursor[1] == '\0' || g_ascii_isspace(cursor[1]))) {
+		sep = '=';
+		cursor = skip_spaces_const(cursor + 1);
+	}
 
 	// Extrair nacionalidade (resto da linha, sem espaços à direita)
 	char nationality[256];
-	g_strlcpy(nationality, cursor, sizeof(nationality));
+	g_strlcpy(nationality, cursor ? cursor : "", sizeof(nationality));
 	trim_trailing_ws(nationality);
 
 	if (nationality[0] == '\0') {
@@ -251,7 +256,7 @@ void execQ6(char linha[], SistemaGestor *gestor, int *Nout) {
 	if (!best_airport || best_count <= 0) {
 		fputc('\n', out);
 	} else {
-		fprintf(out, "%s,%d\n", best_airport, best_count);
+		fprintf(out, "%s%c%d\n", best_airport, sep, best_count);
 	}
 
 	fclose(out);
