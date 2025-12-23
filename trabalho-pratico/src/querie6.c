@@ -70,7 +70,8 @@ static char *trim_spaces(char *s) {
 }
 
 // Extrai até max_ids flight ids de uma string no formato "['AB12345', 'CD67890']"
-static int extract_flight_ids(const char *src, char ids[][8], int max_ids) {
+// Suporta IDs com 7 ou 8 caracteres (ex.: "LP32073" ou "SG112400").
+static int extract_flight_ids(const char *src, char ids[][9], int max_ids) {
 	if (!src || max_ids <= 0) return 0;
 	char *copy = g_strdup(src);
 	if (!copy) return 0;
@@ -89,8 +90,9 @@ static int extract_flight_ids(const char *src, char ids[][8], int max_ids) {
 			tok[lt - 1] = '\0'; tok++; lt -= 2;
 		}
 		tok = trim_spaces(tok);
-		if (lt >= 7) tok[7] = '\0';
-		g_strlcpy(ids[count], tok, 8);
+		size_t idlen = strlen(tok);
+		if (idlen > 8) tok[8] = '\0';
+		g_strlcpy(ids[count], tok, 9);
 		count++;
 	}
 
@@ -144,7 +146,7 @@ static void build_cache_if_needed(SistemaGestor *gestor) {
 		const char *flight_ids_raw = reserva_get_flight_ids(r);
 		if (!flight_ids_raw || flight_ids_raw[0] == '\0') continue;
 
-		char ids[2][8] = {{0}};
+		char ids[2][9] = {{0}};
 		int n_ids = extract_flight_ids(flight_ids_raw, ids, 2);
 		if (n_ids <= 0) continue;
 
