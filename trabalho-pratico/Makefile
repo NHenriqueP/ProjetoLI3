@@ -21,16 +21,18 @@ TARGET = $(BIN_DIR)/programa-principal
 
 # Ficheiros fonte
 SRCS = $(wildcard $(SRC_DIR)/*.c)
-CORE_SRCS = $(filter-out $(SRC_DIR)/main.c $(SRC_DIR)/programa_testes.c, $(SRCS))
+CORE_SRCS = $(filter-out $(SRC_DIR)/main.c $(SRC_DIR)/programa_testes.c $(SRC_DIR)/programa_interativo.c, $(SRCS))
 
 CORE_OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CORE_SRCS))
 MAIN_OBJS = $(CORE_OBJS) $(OBJ_DIR)/main.o
 TEST_OBJS = $(CORE_OBJS) $(OBJ_DIR)/programa_testes.o
+INTERATIVO_OBJS = $(CORE_OBJS) $(OBJ_DIR)/programa_interativo.o
 
 TEST_TARGET = $(BIN_DIR)/programa-testes
+INTERATIVO_TARGET = $(BIN_DIR)/programa-interativo
 
 # Regra padrão
-all: $(TARGET) $(TEST_TARGET)
+all: $(TARGET) $(TEST_TARGET) $(INTERATIVO_TARGET)
 
 # Criar o executável
 $(TARGET): $(MAIN_OBJS)
@@ -38,6 +40,9 @@ $(TARGET): $(MAIN_OBJS)
 
 $(TEST_TARGET): $(TEST_OBJS)
 	$(CC) $(CFLAGS) $(TEST_OBJS) -o $(TEST_TARGET) $(LDFLAGS)
+
+$(INTERATIVO_TARGET): $(INTERATIVO_OBJS)
+	$(CC) $(CFLAGS) $(INTERATIVO_OBJS) -o $(INTERATIVO_TARGET) $(LDFLAGS)
 
 # Compilar ficheiros .c em .o
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
@@ -49,7 +54,7 @@ $(OBJ_DIR):
 
 # Limpar ficheiros compilados
 clean: clean_outputs
-	rm -rf $(OBJ_DIR) $(TARGET) $(TEST_TARGET)
+	rm -rf $(OBJ_DIR) $(TARGET) $(TEST_TARGET) $(INTERATIVO_TARGET)
 
 # Limpar apenas os ficheiros gerados na pasta de resultados
 clean_outputs:
