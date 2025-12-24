@@ -19,10 +19,13 @@ RESULTS_DIR = resultados
 # Nome do executável
 TARGET = $(BIN_DIR)/programa-principal
 
-# Ficheiros fonte
-SRCS = $(wildcard $(SRC_DIR)/*.c)
+# Encontrar todos os ficheiros .c recursivamente em src/
+SRCS = $(shell find $(SRC_DIR) -name '*.c')
+
+# Excluir os mains
 CORE_SRCS = $(filter-out $(SRC_DIR)/main.c $(SRC_DIR)/programa_testes.c $(SRC_DIR)/programa_interativo.c, $(SRCS))
 
+# Converter src/subdir/file.c -> obj/subdir/file.o (preservando estrutura)
 CORE_OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CORE_SRCS))
 MAIN_OBJS = $(CORE_OBJS) $(OBJ_DIR)/main.o
 TEST_OBJS = $(CORE_OBJS) $(OBJ_DIR)/programa_testes.o
@@ -44,8 +47,9 @@ $(TEST_TARGET): $(TEST_OBJS)
 $(INTERATIVO_TARGET): $(INTERATIVO_OBJS)
 	$(CC) $(CFLAGS) $(INTERATIVO_OBJS) -o $(INTERATIVO_TARGET) $(LDFLAGS)
 
-# Compilar ficheiros .c em .o
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+# Compilar ficheiros .c em .o (preservando estrutura de diretórios)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Criar diretório obj se não existir
