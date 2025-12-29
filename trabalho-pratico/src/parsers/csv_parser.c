@@ -92,31 +92,57 @@ int csv_generic_parser(
     if (!data_file || !create_entidade || !insert_entidade) return 0;
 
     char *linha = NULL;
+    char *linha_trabalho = NULL;
     size_t tam = 0;
+    size_t tam_trabalho = 0;
     ssize_t lida;
     char *header = NULL;
+    size_t header_len = 0;
     bool header_lido = false;
     bool header_written_to_error = false;
     int contador_validos = 0;
 
     while ((lida = getline(&linha, &tam, data_file)) != -1) {
-        char *linha_original = strdup(linha);
+        if ((size_t)lida + 1 > tam_trabalho) {
+            size_t novo_tam = (size_t)lida + 1;
+            char *tmp = realloc(linha_trabalho, novo_tam);
+            if (!tmp) {
+                free(linha);
+                free(linha_trabalho);
+                if (header) free(header);
+                return 0;
+            }
+            linha_trabalho = tmp;
+            tam_trabalho = novo_tam;
+        }
+
+        memcpy(linha_trabalho, linha, (size_t)lida);
+        linha_trabalho[(size_t)lida] = '\0';
 
         ssize_t len = lida;
-        while (len > 0 && (linha[len - 1] == '\n' || linha[len - 1] == '\r')) {
-            linha[--len] = '\0';
+        while (len > 0 && (linha_trabalho[len - 1] == '\n' || linha_trabalho[len - 1] == '\r')) {
+            linha_trabalho[--len] = '\0';
         }
 
         if (!header_lido) {
-            header = strdup(linha_original);
             header_lido = true;
-            free(linha_original);
+            if (error_file) {
+                header = malloc((size_t)lida + 1);
+                if (!header) {
+                    free(linha);
+                    free(linha_trabalho);
+                    return 0;
+                }
+                memcpy(header, linha, (size_t)lida);
+                header[(size_t)lida] = '\0';
+                header_len = (size_t)lida;
+            }
             continue;
         }
 
         char *fields[20];
         int max_fields = 20;
-        int n_fields = csv_split_quoted(linha, separador, fields, max_fields);
+        int n_fields = csv_split_quoted(linha_trabalho, separador, fields, max_fields);
 
         bool valid = true;
         if (is_valid_entidade) {
@@ -134,16 +160,15 @@ int csv_generic_parser(
             contador_validos++;
         } else if (error_file) {
             if (!header_written_to_error && header) {
-                fwrite(header, 1, strlen(header), error_file);
+                fwrite(header, 1, header_len, error_file);
                 header_written_to_error = true;
             }
-            fwrite(linha_original, 1, strlen(linha_original), error_file);
+            fwrite(linha, 1, (size_t)lida, error_file);
         }
-
-        free(linha_original);
     }
 
     free(linha);
+    free(linha_trabalho);
     if (header) free(header);
 
     return contador_validos;

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 struct Aeroporto {
-    char *iata;
+    const char *iata;
     char *nome;
     char *cidade;
     char *pais;
@@ -22,11 +22,12 @@ Aeroporto* aeroporto_create(const char *iata,
     Aeroporto *aeroporto = g_new0(Aeroporto, 1);
     if (!aeroporto) return NULL;
 
-    aeroporto->iata = g_strdup(iata);
+    // IATA aparece em muitos voos: internar ajuda e tem baixo-cardinalidade.
+    aeroporto->iata = g_intern_string(iata);
     aeroporto->nome = g_strdup(nome);
     aeroporto->cidade = g_strdup(cidade);
-    aeroporto->pais = g_strdup(pais);
-    aeroporto->tipo = g_strdup(tipo);
+	 aeroporto->pais = g_strdup(pais);
+	 aeroporto->tipo = g_strdup(tipo);
 
     if (!aeroporto->iata) {
         aeroporto_destroy(aeroporto);
@@ -39,7 +40,6 @@ Aeroporto* aeroporto_create(const char *iata,
 void aeroporto_destroy(Aeroporto *aeroporto) {
     if (!aeroporto) return;
 
-    g_free(aeroporto->iata);
     g_free(aeroporto->nome);
     g_free(aeroporto->cidade);
     g_free(aeroporto->pais);

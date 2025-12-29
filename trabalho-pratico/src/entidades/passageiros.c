@@ -2,11 +2,11 @@
 #include <glib.h>
 
 struct Passageiro {
-	char *document_number;
+    char *document_number;
 	char *first_name;
 	char *last_name;
 	char *dob;
-	char *nationality;
+    const char *nationality;
 };
 
 Passageiro* passageiro_create(
@@ -26,18 +26,18 @@ Passageiro* passageiro_create(
     p->first_name = g_strdup(first_name);
     p->last_name = g_strdup(last_name);
     p->dob = g_strdup(dob);
-    p->nationality = g_strdup(nationality);
+	// Nacionalidade repete muito no dataset.
+	p->nationality = g_intern_string(nationality);
     return p;   
 }
 
 void passageiro_destroy(Passageiro *passageiro) {
     if (!passageiro) return;
 
-    g_free(passageiro->document_number);
+	g_free(passageiro->document_number);
     g_free(passageiro->first_name);
     g_free(passageiro->last_name);
     g_free(passageiro->dob);
-    g_free(passageiro->nationality);
     g_free(passageiro);
 }
 

@@ -42,7 +42,8 @@ VooPtrManager* voo_ptr_manager_create() {
     m->by_id = g_hash_table_new(g_str_hash, g_str_equal);
     m->voos_por_data = g_tree_new_full((GCompareDataFunc)comparar_dates_dia, NULL, g_free, (GDestroyNotify)g_ptr_array_unref);
 	m->delay_stats_by_airline = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, airline_delay_stats_free);
-	m->flight_count_by_aircraft = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+    // keys são strings internadas (do Voo/Aeronave), portanto não devem ser libertadas.
+    m->flight_count_by_aircraft = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
 
     if (!m->flights || !m->by_id || !m->voos_por_data || !m->delay_stats_by_airline || !m->flight_count_by_aircraft) {
         if (m->flights) g_array_free(m->flights, TRUE);
@@ -120,14 +121,10 @@ int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
         if (aircraft_id && aircraft_id[0] != '\0') {
             gint *p = g_hash_table_lookup(manager->flight_count_by_aircraft, aircraft_id);
             if (!p) {
-                char *key_copy = g_strdup(aircraft_id);
                 p = g_new0(gint, 1);
-                if (key_copy && p) {
-                    g_hash_table_insert(manager->flight_count_by_aircraft, key_copy, p);
-                } else {
-                    if (key_copy) g_free(key_copy);
-                    if (p) g_free(p);
-                    p = NULL;
+                if (p) {
+                    // aircraft_id é internado no Voo (e Aeronave), seguro usar como key.
+                    g_hash_table_insert(manager->flight_count_by_aircraft, (gpointer)aircraft_id, p);
                 }
             }
             if (p) (*p)++;
