@@ -31,7 +31,8 @@ static const char *skip_spaces_const(const char *s) {
 static void free_airport_count(gpointer data) {
     AirportCount *ac = (AirportCount*)data;
     if (ac) {
-        g_free(ac);
+        g_free((char*)ac->iata); 
+        g_free(ac);              
     }
 }
 
@@ -70,7 +71,7 @@ gboolean processar_voos_range(gpointer key, gpointer value, gpointer user_data) 
         }
         else {
             ac = g_new0(AirportCount, 1);
-            ac->iata = origem;
+            ac->iata = g_strdup(origem);
             ac->airport = NULL; // Será preenchido depois, se necessário
             ac->count = 1;
              g_hash_table_insert(tabela_contagem, 

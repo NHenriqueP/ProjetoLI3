@@ -21,9 +21,9 @@ struct Voo {
     Horario departure;
     Horario actualdeparture;
     Status estado;
-	const char *iataorigem;
-	const char *iatadestino;
-	char *aircraft;
+    char *iataorigem;
+    char *iatadestino;
+    char *aircraft;
 	char *airline;
 };
 
@@ -133,7 +133,8 @@ void voo_destroy(Voo *voo) {
 	if (!voo) return;
 
 	g_free(voo->idvoo);
-	// IATA é internado via g_intern_string(): não deve ser libertado.
+	g_free(voo->iataorigem);
+	g_free(voo->iatadestino);
 	g_free(voo->aircraft);
 	g_free(voo->airline);
 	g_free(voo);
@@ -156,10 +157,8 @@ Voo* voo_create(const char *idvoo,
 	voo->departure = *departure;
 	voo->actualdeparture = *actualdeparture;
 	voo->estado = estado;
-	// IATA é baixo-cardinalidade e aparece em muitos voos: internar ajuda.
-	voo->iataorigem = g_intern_string(iataorigem);
-	voo->iatadestino = g_intern_string(iatadestino);
-	// Aircraft/airline podem ter cardinalidade alta: manter strdup evita overhead do interning.
+	voo->iataorigem = g_strdup(iataorigem);
+	voo->iatadestino = g_strdup(iatadestino);
 	voo->aircraft = g_strdup(aircraft);
 	voo->airline = g_strdup(airline);
 	if (!voo->idvoo || !voo->iataorigem || !voo->iatadestino || !voo->aircraft || !voo->airline) {
