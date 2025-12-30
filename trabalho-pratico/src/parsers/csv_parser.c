@@ -42,12 +42,12 @@ void parse_resultado_destroy(ParseResultado *resultado) {
     free(resultado);
 }
 
-int csv_split_quoted(
-    char *s,//linha que se transforma em tokens
-    char sep,// o separador entre os tokens é a ','
-    char **out,//array onde ficam os ponteiros para o inicio de cada campo; ex: iaca
-    int max_out//número máximo de carateres
-) 
+/*
+ * Divide uma linha CSV em campos, suportando aspas.
+ *
+ * Nota: tokeniza in-place e escreve em `out` ponteiros para os campos.
+ */
+int csv_split_quoted(char *s, char sep, char **out, int max_out)
 {
     if (!s || !out || max_out <= 0) return 0;
     int n = 0;
@@ -58,6 +58,11 @@ int csv_split_quoted(
     while (*r) {
         char c = *r;
         if (c == '"') {
+            /*
+             * CSV quoting:
+             * - alterna estado "dentro de aspas" (inq)
+             * - "" dentro de aspas representa uma aspa literal
+             */
             if (inq && r[1] == '"') { 
                 *w++ = '"';
                 r += 2;
@@ -108,6 +113,7 @@ int csv_generic_parser(
         }
 
         if (!header_lido) {
+            /* Guardamos o header para replicar no ficheiro de erros, caso existam linhas inválidas. */
             header = strdup(linha_original);
             header_lido = true;
             free(linha_original);
@@ -134,6 +140,7 @@ int csv_generic_parser(
             contador_validos++;
         } else if (error_file) {
             if (!header_written_to_error && header) {
+                /* Escreve o header no ficheiro de erros apenas uma vez. */
                 fwrite(header, 1, strlen(header), error_file);
                 header_written_to_error = true;
             }

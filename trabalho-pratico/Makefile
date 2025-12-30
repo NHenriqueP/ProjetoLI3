@@ -71,5 +71,14 @@ rebuild: clean all
 run: clean_outputs $(TARGET)
 	./$(TARGET)
 
+# Gerar documentação (Doxygen)
+DOXYFILE = docs/doxygen/Doxyfile
+
+docs:
+	doxygen $(DOXYFILE)
+
+clean_docs:
+	rm -rf docs/doxygen/html docs/doxygen/latex docs/doxygen/doxygen_warnings.log
+
 # Regras que não são ficheiros
-.PHONY: all clean clean_outputs rebuild run
+.PHONY: all clean clean_outputs rebuild run docs clean_docs

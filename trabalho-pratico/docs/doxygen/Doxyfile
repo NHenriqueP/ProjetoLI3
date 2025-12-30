@@ -1,0 +1,46 @@
+# Doxygen configuration file
+# Gerar docs: make docs  (ou: doxygen docs/doxygen/Doxyfile)
+
+PROJECT_NAME           = "trabalho-pratico"
+PROJECT_BRIEF          = "Projeto LI3 - Gestão/Queries sobre voos"
+OUTPUT_DIRECTORY       = docs/doxygen
+
+# Input
+# Inclui também docs/doxygen/ para que documentos Markdown (ex.: funcoes_10.md)
+# sejam processados e linkáveis no HTML gerado.
+INPUT                  = include src docs/doxygen
+RECURSIVE              = YES
+FILE_PATTERNS          = *.h *.c *.md
+
+# Extraction
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+
+# Diagnostics
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = NO
+WARN_NO_PARAMDOC       = NO
+WARN_LOGFILE           = docs/doxygen/doxygen_warnings.log
+
+# Output formats
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_LATEX         = NO
+
+# Graphviz (dot) — opcional. Desativado para não depender de graphviz.
+HAVE_DOT               = NO
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_FROM_PATH        = .
+
+# Markdown
+MARKDOWN_SUPPORT       = YES
+USE_MDFILE_AS_MAINPAGE = docs/doxygen/mainpage.md
+
+# Misc
+QUIET                  = YES
+JAVADOC_AUTOBRIEF      = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES

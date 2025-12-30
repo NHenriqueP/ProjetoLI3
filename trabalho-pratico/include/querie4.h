@@ -3,12 +3,32 @@
 
 #include "gestorglobal.h"
 
-// Query 4: Passageiro que esteve mais vezes no top 10 semanal por gastos.
-// Input: "4[S] [begin_date end_date]" (datas opcionais, formato YYYY-MM-DD)
-// Output: document_number;first_name;last_name;dob;nationality;count_top_10
+/**
+ * @file querie4.h
+ * @brief API da Query 4.
+ */
+
+/**
+ * @brief Executa a Query 4 a partir de uma linha de input.
+ *
+ * A Query 4 calcula o passageiro que esteve mais vezes no top 10 semanal por
+ * gastos. O input pode incluir datas opcionais (formato YYYY-MM-DD).
+ *
+ * @param linha Linha de comando (ex.: "4[S] [begin_date end_date]").
+ * @param gestor Gestor global com os dados carregados.
+ * @param Nout Ponteiro para o índice/contador de outputs.
+ * @return Nada (função `void`).
+ */
 void execQ4(char linha[], SistemaGestor *gestor, int *Nout);
 
-// Libertar cache interna da Q4 (para evitar leaks em testes/valgrind)
+/**
+ * @brief Liberta a cache interna usada pela Query 4.
+ *
+ * Útil para evitar fugas aparentes quando a query mantém estruturas estáticas
+ * para otimização.
+ *
+ * @return Nada (função `void`).
+ */
 void querie4_cleanup_cache(void);
 
 #endif

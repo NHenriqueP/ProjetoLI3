@@ -22,6 +22,7 @@
 #include <string.h>
 
 static int path_join2(char *dst, size_t dstsz, const char *dir, const char *file) {
+    /* Junta `dir` + '/' + `file` em `dst` com validação de tamanho. */
     if (!dst || !dir || !file || dstsz == 0) return 0;
     dst[0] = '\0';
     size_t len = 0;
@@ -50,6 +51,7 @@ int carregar_dados(const char *pasta_csv, SistemaGestor *gestor) {
 
     if (!path_join2(caminho_completo, sizeof(caminho_completo), pasta_csv, "airports.csv")) return 0;
 
+    /* Convenção: linhas inválidas são escritas em `resultados/<entidade>_errors.csv`. */
     const char *erros_rel = "resultados/airports_errors.csv";
     size_t l = strlen(erros_rel);
     if (l >= sizeof(caminho_erros)) return 0;
