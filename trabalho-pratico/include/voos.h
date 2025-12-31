@@ -27,6 +27,17 @@ typedef enum {
 typedef struct Voo Voo;
 
 /**
+ * @brief Interna (pool) strings repetidas do voo.
+ *
+ * Interna campos tipicamente repetidos (IATA origem/destino, aircraft, airline)
+ * num pool de strings para reduzir duplicação de memória.
+ *
+ * @param voo Voo a alterar.
+ * @param pool Hashtable usada como pool (propriedade do gestor; mantém strings vivas).
+ */
+void voo_intern_repeated_strings(Voo *voo, GHashTable *pool);
+
+/**
  * @brief Destrói um voo.
  *
  * Liberta a memória associada à estrutura `Voo`.

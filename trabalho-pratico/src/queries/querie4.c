@@ -82,23 +82,6 @@ static gint64 week_start_sunday(gint64 day_number) {
 	return day_number - weekday_sun0(day_number);
 }
 
-static int extract_first_flight_id(const char *src, char out[9]) {
-	if (!src || !out) return 0;
-	out[0] = '\0';
-	// procurar a primeira aspa simples ou dupla
-	const char *p = src;
-	while (*p && *p != '\'' && *p != '"') p++;
-	if (!*p) return 0;
-	char quote = *p;
-	p++;
-	int i = 0;
-	while (*p && *p != quote && i < 8) {
-		out[i++] = *p++;
-	}
-	out[i] = '\0';
-	return (i == 7 || i == 8);
-}
-
 typedef struct {
 	Passageiro *p;
 	double total;
@@ -184,8 +167,8 @@ static void build_cache_if_needed(SistemaGestor *gestor) {
 		Passageiro *p = passageiro_ptr_manager_find_by_doc(pass_m, doc);
 		if (!p) continue;
 
-		char fid[9] = {0};
-		if (!extract_first_flight_id(reserva_get_flight_ids(r), fid)) continue;
+		const char *fid = reserva_get_flight_id_at(r, 0);
+		if (!fid || fid[0] == '\0') continue;
 		const Voo *v = voo_ptr_manager_find_by_id(voos_m, fid);
 		if (!v) continue;
 

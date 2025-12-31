@@ -9,6 +9,7 @@ struct voo_ptr_manager {
     GTree *voos_por_data;
     GHashTable *delay_stats_by_airline;
     GHashTable *flight_count_by_aircraft;
+	GHashTable *string_pool;
 };
 
 static void airline_delay_stats_free(gpointer data) {
@@ -43,13 +44,15 @@ VooPtrManager* voo_ptr_manager_create() {
     m->voos_por_data = g_tree_new_full((GCompareDataFunc)comparar_dates_dia, NULL, g_free, (GDestroyNotify)g_ptr_array_unref);
 	m->delay_stats_by_airline = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, airline_delay_stats_free);
 	m->flight_count_by_aircraft = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+    m->string_pool = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
 
-    if (!m->flights || !m->by_id || !m->voos_por_data || !m->delay_stats_by_airline || !m->flight_count_by_aircraft) {
+    if (!m->flights || !m->by_id || !m->voos_por_data || !m->delay_stats_by_airline || !m->flight_count_by_aircraft || !m->string_pool) {
         if (m->flights) g_array_free(m->flights, TRUE);
         if (m->by_id) g_hash_table_destroy(m->by_id);
         if (m->voos_por_data) g_tree_destroy(m->voos_por_data);
 		if (m->delay_stats_by_airline) g_hash_table_destroy(m->delay_stats_by_airline);
 		if (m->flight_count_by_aircraft) g_hash_table_destroy(m->flight_count_by_aircraft);
+		if (m->string_pool) g_hash_table_destroy(m->string_pool);
         free(m);
         return NULL;
     }
@@ -76,6 +79,10 @@ void voo_ptr_manager_destroy(VooPtrManager *manager) {
     if (manager->by_id) g_hash_table_destroy(manager->by_id);
     if (manager->voos_por_data) g_tree_destroy(manager->voos_por_data);
 	if (manager->delay_stats_by_airline) g_hash_table_destroy(manager->delay_stats_by_airline);
+    if (manager->string_pool) {
+        g_hash_table_destroy(manager->string_pool);
+        manager->string_pool = NULL;
+    }
     free(manager);
 }
 
@@ -83,6 +90,10 @@ int voo_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entidade) {
     if (!gestor || !entidade) return 0;
     VooPtrManager *manager = (VooPtrManager*)gestor;
     Voo *voo = (Voo*)entidade;
+    // Internar strings repetidas (reduz duplicação de memória)
+    if (manager->string_pool) {
+        voo_intern_repeated_strings(voo, manager->string_pool);
+    }
     const char *id = voo_get_id(voo);
 
     if (manager->by_id && g_hash_table_lookup(manager->by_id, id)) {

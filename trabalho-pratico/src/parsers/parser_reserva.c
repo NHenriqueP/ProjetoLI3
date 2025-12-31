@@ -85,26 +85,6 @@ static int existe_flight_id(const char *id, SistemaGestor *gestor) {
     return voo_ptr_manager_find_by_id(voos_manager, id) != NULL;
 }
 
-static int processar_e_validar_flights(const char *flight_ids_str, SistemaGestor *gestor) {
-    if (!flight_ids_str || *flight_ids_str == '\0') return 0;
-    char ids[2][9] = {{0}};
-    int n = extrair_ids_de_lista(flight_ids_str, ids, 2);
-    if (n < 1 || n > 2) return 0;
-    for (int i = 0; i < n; i++) {
-        if (!validar_flight_id(ids[i]) || !existe_flight_id(ids[i], gestor)) return 0;
-    }
-    if (n == 2) {
-        const Voo *primeiro = voo_ptr_manager_find_by_id(gestor_global_get_voos(gestor), ids[0]);
-        const Voo *segundo = voo_ptr_manager_find_by_id(gestor_global_get_voos(gestor), ids[1]);
-        if (!primeiro || !segundo) return 0;
-        const char *destino = voo_get_iata_destino(primeiro);
-        const char *origem = voo_get_iata_origem(segundo);
-        if (!destino || !origem) return 0;
-        return strcmp(origem, destino) == 0;
-    }
-    return 1;
-}
-
 void* criar_reserva(char **fields, int n_fields, void *ctx) {
     SistemaGestor *gestor = (SistemaGestor*)ctx;
     if (!gestor || n_fields < 8) return NULL;
@@ -119,7 +99,22 @@ void* criar_reserva(char **fields, int n_fields, void *ctx) {
     char *qr_code           = fields[7];
 
     if (!validar_reservation_id(reservation_id)) return NULL;
-    if (!processar_e_validar_flights(flight_ids, gestor)) return NULL;
+    if (!flight_ids || *flight_ids == '\0') return NULL;
+    char ids[2][9] = {{0}};
+    int n_ids = extrair_ids_de_lista(flight_ids, ids, 2);
+    if (n_ids < 1 || n_ids > 2) return NULL;
+    for (int i = 0; i < n_ids; i++) {
+        if (!validar_flight_id(ids[i]) || !existe_flight_id(ids[i], gestor)) return NULL;
+    }
+    if (n_ids == 2) {
+        const Voo *primeiro = voo_ptr_manager_find_by_id(gestor_global_get_voos(gestor), ids[0]);
+        const Voo *segundo = voo_ptr_manager_find_by_id(gestor_global_get_voos(gestor), ids[1]);
+        if (!primeiro || !segundo) return NULL;
+        const char *destino = voo_get_iata_destino(primeiro);
+        const char *origem = voo_get_iata_origem(segundo);
+        if (!destino || !origem) return NULL;
+        if (strcmp(origem, destino) != 0) return NULL;
+    }
 
     if (!document_number || strlen(document_number) == 0 || strlen(document_number) > 9 ||
         !existe_document_number(gestor_global_get_passageiros(gestor), document_number)) {
@@ -140,12 +135,7 @@ void* criar_reserva(char **fields, int n_fields, void *ctx) {
     bool priority_boarding;
     if (!parse_boolean(priority_str, &priority_boarding)) return NULL;
 
-    return reserva_create(
-        reservation_id,
-        flight_ids,
-        document_number,
-        price  
-    );
+    return reserva_create_from_ids(reservation_id, ids, n_ids, document_number, price);
 }
 
 ParseResultado* parse_reserva_line(char **fields, int n_fields, SistemaGestor *gestor) {
