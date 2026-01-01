@@ -27,6 +27,28 @@ static char *skip_spaces(char *s) {
     return s;
 }
 
+// Extrai até max_ids flight ids de uma string no formato "['AB12345', 'CD67890']"
+// Nota: fase 2 tem flight ids com 7 ou 8 caracteres.
+static int extract_flight_ids_fast(const char *src, char ids[][9], int max_ids) {
+    if (!src || max_ids <= 0) return 0;
+    int count = 0;
+    const char *p = src;
+    while (*p && count < max_ids) {
+        while (*p && *p != '\'' && *p != '"') p++;
+        if (!*p) break;
+        char quote = *p++;
+        int i = 0;
+        while (*p && *p != quote && i < 8) {
+            ids[count][i++] = *p++;
+        }
+        ids[count][i] = '\0';
+        // avançar até fechar aspas
+        while (*p && *p != quote) p++;
+        if (*p == quote) p++;
+        if (i == 7 || i == 8) count++;
+    }
+    return count;
+}
 
 typedef struct {
     long aterragem;
@@ -94,13 +116,15 @@ static void q1_build_cache_if_needed(SistemaGestor *gestor) {
     for (guint i = 0; i < total_reservas; i++) {
         const Reserva *reserva = reserva_ptr_manager_get(reservas_manager, i);
         if (!reserva) continue;
+        const char *flight_ids_raw = reserva_get_flight_ids(reserva);
+        if (!flight_ids_raw || flight_ids_raw[0] == '\0') continue;
 
-        int n_ids = reserva_get_n_flights(reserva);
+        char ids[2][9] = {{0}};
+        int n_ids = extract_flight_ids_fast(flight_ids_raw, ids, 2);
         if (n_ids <= 0) continue;
+
         for (int j = 0; j < n_ids; j++) {
-            const char *fid = reserva_get_flight_id_at(reserva, j);
-            if (!fid) continue;
-            const Voo *voo = voo_ptr_manager_find_by_id(voos_manager, fid);
+            const Voo *voo = voo_ptr_manager_find_by_id(voos_manager, ids[j]);
             if (!voo) continue;
             if (voo_get_status(voo) == CANCELLED) continue;
             const char *origem = voo_get_iata_origem(voo);

@@ -25,50 +25,7 @@ struct Voo {
     char *iatadestino;
     char *aircraft;
 	char *airline;
-	gboolean pooled_strings;
 };
-
-static const char *pool_intern(GHashTable *pool, const char *s) {
-	if (!pool || !s || s[0] == '\0') return s;
-	gpointer found = g_hash_table_lookup(pool, s);
-	if (found) return (const char*)found;
-	char *copy = g_strdup(s);
-	if (!copy) return s;
-	// key == value; key destroy frees memory once
-	g_hash_table_insert(pool, copy, copy);
-	return copy;
-}
-
-void voo_intern_repeated_strings(Voo *voo, GHashTable *pool) {
-	if (!voo || !pool) return;
-	const char *p;
-
-	p = pool_intern(pool, voo->iataorigem);
-	if (p && p != voo->iataorigem) {
-		g_free(voo->iataorigem);
-		voo->iataorigem = (char*)p;
-	}
-
-	p = pool_intern(pool, voo->iatadestino);
-	if (p && p != voo->iatadestino) {
-		g_free(voo->iatadestino);
-		voo->iatadestino = (char*)p;
-	}
-
-	p = pool_intern(pool, voo->aircraft);
-	if (p && p != voo->aircraft) {
-		g_free(voo->aircraft);
-		voo->aircraft = (char*)p;
-	}
-
-	p = pool_intern(pool, voo->airline);
-	if (p && p != voo->airline) {
-		g_free(voo->airline);
-		voo->airline = (char*)p;
-	}
-
-	voo->pooled_strings = TRUE;
-}
 
 static long long days_from_civil(int y, unsigned m, unsigned d) {
 	// Howard Hinnant's algorithm: days since 1970-01-01.
@@ -176,12 +133,10 @@ void voo_destroy(Voo *voo) {
 	if (!voo) return;
 
 	g_free(voo->idvoo);
-	if (!voo->pooled_strings) {
-		g_free(voo->iataorigem);
-		g_free(voo->iatadestino);
-		g_free(voo->aircraft);
-		g_free(voo->airline);
-	}
+	g_free(voo->iataorigem);
+	g_free(voo->iatadestino);
+	g_free(voo->aircraft);
+	g_free(voo->airline);
 	g_free(voo);
 }
 
@@ -206,7 +161,6 @@ Voo* voo_create(const char *idvoo,
 	voo->iatadestino = g_strdup(iatadestino);
 	voo->aircraft = g_strdup(aircraft);
 	voo->airline = g_strdup(airline);
-	voo->pooled_strings = FALSE;
 	if (!voo->idvoo || !voo->iataorigem || !voo->iatadestino || !voo->aircraft || !voo->airline) {
 		voo_destroy(voo);
 		return NULL;

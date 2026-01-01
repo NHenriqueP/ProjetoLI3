@@ -60,6 +60,45 @@ void querie6_cleanup_cache(void) {
 	q6_cache = NULL;
 }
 
+// remove espaços no início e fim (in-place)
+static char *trim_spaces(char *s) {
+	if (!s) return s;
+	while (g_ascii_isspace(*s)) s++;
+	char *end = s + strlen(s);
+	while (end > s && g_ascii_isspace(*(end - 1))) *(--end) = '\0';
+	return s;
+}
+
+// Extrai até max_ids flight ids de uma string no formato "['AB12345', 'CD67890']"
+// Suporta IDs com 7 ou 8 caracteres (ex.: "LP32073" ou "SG112400").
+static int extract_flight_ids(const char *src, char ids[][9], int max_ids) {
+	if (!src || max_ids <= 0) return 0;
+	char *copy = g_strdup(src);
+	if (!copy) return 0;
+
+	char *s = trim_spaces(copy);
+	if (*s == '[') {
+		size_t L = strlen(s);
+		if (L > 0 && s[L - 1] == ']') { s[L - 1] = '\0'; s++; }
+	}
+
+	int count = 0;
+	for (char *tok = strtok(s, ","); tok && count < max_ids; tok = strtok(NULL, ",")) {
+		tok = trim_spaces(tok);
+		size_t lt = strlen(tok);
+		if (lt >= 2 && ((tok[0] == '\'' && tok[lt - 1] == '\'') || (tok[0] == '"' && tok[lt - 1] == '"'))) {
+			tok[lt - 1] = '\0'; tok++; lt -= 2;
+		}
+		tok = trim_spaces(tok);
+		size_t idlen = strlen(tok);
+		if (idlen > 8) tok[8] = '\0';
+		g_strlcpy(ids[count], tok, 9);
+		count++;
+	}
+
+	g_free(copy);
+	return count;
+}
 
 static void build_cache_if_needed(SistemaGestor *gestor) {
 	if (q6_cache && q6_cache->built) return;
@@ -103,14 +142,17 @@ static void build_cache_if_needed(SistemaGestor *gestor) {
 		const char *nat = passageiro_get_nationality(p);
 		if (!nat || nat[0] == '\0') continue;
 
-		int n_ids = reserva_get_n_flights(r);
+		// Extrair flight ids da reserva
+		const char *flight_ids_raw = reserva_get_flight_ids(r);
+		if (!flight_ids_raw || flight_ids_raw[0] == '\0') continue;
+
+		char ids[2][9] = {{0}};
+		int n_ids = extract_flight_ids(flight_ids_raw, ids, 2);
 		if (n_ids <= 0) continue;
 
 		// Para CADA voo da reserva, contar o destino (cada aterragem conta)
 		for (int j = 0; j < n_ids; j++) {
-			const char *fid = reserva_get_flight_id_at(r, j);
-			if (!fid) continue;
-			const Voo *voo = voo_ptr_manager_find_by_id(voos_m, fid);
+			const Voo *voo = voo_ptr_manager_find_by_id(voos_m, ids[j]);
 			if (!voo) continue;
 			if (voo_get_status(voo) == CANCELLED) continue;
 

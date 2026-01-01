@@ -105,20 +105,18 @@ int csv_generic_parser(
     int contador_validos = 0;
 
     while ((lida = getline(&linha, &tam, data_file)) != -1) {
-        // Preparar uma versão sem CR/LF para parsing, sem alocar cópia da linha.
-        // Para manter a linha original no caso de erro, guardamos o 1º char removido e restauramos.
+        char *linha_original = strdup(linha);
+
         ssize_t len = lida;
-        while (len > 0 && (linha[len - 1] == '\n' || linha[len - 1] == '\r')) len--;
-        char saved = linha[len];
-        linha[len] = '\0';
+        while (len > 0 && (linha[len - 1] == '\n' || linha[len - 1] == '\r')) {
+            linha[--len] = '\0';
+        }
 
         if (!header_lido) {
             /* Guardamos o header para replicar no ficheiro de erros, caso existam linhas inválidas. */
-            // Copiar header com newline tal como veio do ficheiro.
-            linha[len] = saved;
-            header = strndup(linha, (size_t)lida);
-            linha[len] = '\0';
+            header = strdup(linha_original);
             header_lido = true;
+            free(linha_original);
             continue;
         }
 
@@ -146,13 +144,10 @@ int csv_generic_parser(
                 fwrite(header, 1, strlen(header), error_file);
                 header_written_to_error = true;
             }
-            // Restaurar CR/LF original e escrever a linha como estava no ficheiro.
-            linha[len] = saved;
-            fwrite(linha, 1, (size_t)lida, error_file);
+            fwrite(linha_original, 1, strlen(linha_original), error_file);
         }
 
-        // repor terminador para a próxima iteração
-        linha[len] = '\0';
+        free(linha_original);
     }
 
     free(linha);
