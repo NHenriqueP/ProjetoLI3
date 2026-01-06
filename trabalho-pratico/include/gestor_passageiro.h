@@ -54,23 +54,4 @@ int existe_document_number(PassageiroPtrManager *manager, const char *document_n
  */
 Passageiro* passageiro_ptr_manager_find_by_doc(PassageiroPtrManager *manager, const char *document_number);
 
-// Total de passageiros carregados
-/**
- * @brief Número total de passageiros carregados.
- *
- * @param manager Gestor de passageiros.
- * @return Número de passageiros.
- */
-guint passageiro_ptr_manager_count(const PassageiroPtrManager *manager);
-
-// Acesso indexado aos passageiros (retorna NULL se index for inválido)
-/**
- * @brief Acesso indexado a um passageiro.
- *
- * @param manager Gestor de passageiros.
- * @param index Índice (0..count-1).
- * @return Ponteiro para o passageiro no índice, ou `NULL` se o índice for inválido.
- */
-const Passageiro* passageiro_ptr_manager_get(const PassageiroPtrManager *manager, guint index);
-
 #endif

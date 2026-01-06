@@ -12,15 +12,6 @@
 #include "reservas.h"
 #include "voos.h"
 
-// remove espaços no início e fim (in-place)
-static char *trim_spaces(char *s) {
-    if (!s) return s;
-    while (g_ascii_isspace(*s)) s++;
-    char *end = s + strlen(s);
-    while (end > s && g_ascii_isspace(*(end - 1))) *(--end) = '\0';
-    return s;
-}
-
 static char *skip_spaces(char *s) {
     if (!s) return NULL;
     while (*s && g_ascii_isspace(*s)) s++;
