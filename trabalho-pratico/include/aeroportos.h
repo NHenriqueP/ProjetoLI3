@@ -48,6 +48,17 @@ void aeroporto_destroy(Aeroporto *aeroporto);
  */
 const char* aeroporto_get_iata(const Aeroporto *aeroporto);
 
+// Resumo formatado de um aeroporto no buffer fornecido
+/**
+ * @brief Escreve um resumo do aeroporto para um buffer.
+ *
+ * @param airport Aeroporto.
+ * @param buf Buffer de saída.
+ * @param bufsize Tamanho do buffer.
+ * @return Inteiro de estado (por convenção, 0/1 conforme implementação).
+ */
+int airport_summary(const Aeroporto *airport, char *buf, size_t bufsize);
+
 // Resumo formatado de um aeroporto no buffer fornecido, usando um separador específico
 // Produz: IATA<sep>Nome<sep>Cidade<sep>País<sep>Tipo
 /**

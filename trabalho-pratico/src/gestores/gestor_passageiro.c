@@ -5,15 +5,19 @@
 #include <stdlib.h>
 
 struct passageiro_ptr_manager {
-    GHashTable *by_doc; /* key: doc_number (owned by Passageiro), value: Passageiro* */
+    GArray *passageiros; /* array de (Passageiro*) */
+    GHashTable *by_doc;
 };
 
 PassageiroPtrManager* passageiro_ptr_manager_create() {
     PassageiroPtrManager *m = malloc(sizeof(PassageiroPtrManager));
     if (!m) return NULL;
 
+    m->passageiros = g_array_new(FALSE, FALSE, sizeof(Passageiro*));
     m->by_doc = g_hash_table_new(g_str_hash, g_str_equal);
-    if (!m->by_doc) {
+    if (!m->passageiros || !m->by_doc) {
+        if (m->passageiros) g_array_free(m->passageiros, TRUE);
+        if (m->by_doc) g_hash_table_destroy(m->by_doc);
         free(m);
         return NULL;
     }
@@ -24,17 +28,17 @@ PassageiroPtrManager* passageiro_ptr_manager_create() {
 void passageiro_ptr_manager_destroy(PassageiroPtrManager *manager) {
     if (!manager) return;
 
-    if (manager->by_doc) {
-        // Destruir todos os passageiros ao destruir a hash table
-        GHashTableIter iter;
-        gpointer key, value;
-        g_hash_table_iter_init(&iter, manager->by_doc);
-        while (g_hash_table_iter_next(&iter, &key, &value)) {
-            Passageiro *p = (Passageiro*)value;
-            if (p) passageiro_destroy(p);
+    if (manager->passageiros) {
+        for (guint i = 0; i < manager->passageiros->len; i++) {
+            Passageiro *p = g_array_index(manager->passageiros, Passageiro*, i);
+            if (p) {
+                passageiro_destroy(p);
+            }
         }
-        g_hash_table_destroy(manager->by_doc);
+        g_array_free(manager->passageiros, TRUE);
     }
+
+    if (manager->by_doc) g_hash_table_destroy(manager->by_doc);
 
     free(manager);
 }
@@ -58,6 +62,17 @@ int passageiro_ptr_manager_add_from_ptr_adapter(void *gestor, const void *entida
         passageiro_destroy(passageiro);
         return 1;
     }
+    g_array_append_val(manager->passageiros, passageiro);
     g_hash_table_insert(manager->by_doc, (gpointer)doc_number, passageiro);
     return 1;
+}
+
+guint passageiro_ptr_manager_count(const PassageiroPtrManager *manager) {
+    if (!manager || !manager->passageiros) return 0;
+    return manager->passageiros->len;
+}
+
+const Passageiro* passageiro_ptr_manager_get(const PassageiroPtrManager *manager, guint index) {
+    if (!manager || !manager->passageiros || index >= manager->passageiros->len) return NULL;
+    return g_array_index(manager->passageiros, Passageiro*, index);
 }

@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "voos.h"
 
 static int validar_reservation_id(const char *s) {
     if (!s || strlen(s) != 10) return 0;

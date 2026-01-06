@@ -210,12 +210,44 @@ const char* voo_get_iata_origem(const Voo *voo);
 const char* voo_get_iata_destino(const Voo *voo);
 
 /**
+ * @brief Obtém o horário estimado de partida.
+ *
+ * @param voo Voo.
+ * @return Ponteiro para `Horario` (propriedade do voo; não libertar).
+ */
+const Horario* voo_get_departure(const Voo *voo);
+
+/**
  * @brief Obtém o horário real de partida.
  *
  * @param voo Voo.
  * @return Ponteiro para `Horario` (propriedade do voo; não libertar).
  */
 const Horario* voo_get_actual_departure(const Voo *voo);
+
+/**
+ * @brief Obtém o horário estimado de chegada.
+ *
+ * @param voo Voo.
+ * @return Ponteiro para `Horario` (propriedade do voo; não libertar).
+ */
+const Horario* voo_get_arrival(const Voo *voo);
+
+/**
+ * @brief Obtém o horário real de chegada.
+ *
+ * @param voo Voo.
+ * @return Ponteiro para `Horario` (propriedade do voo; não libertar).
+ */
+const Horario* voo_get_actual_arrival(const Voo *voo);
+
+/**
+ * @brief Obtém o gate associado ao voo.
+ *
+ * @param voo Voo.
+ * @return Gate.
+ */
+int voo_get_gate(const Voo *voo);
 
 /**
  * @brief Obtém a companhia aérea do voo.
@@ -226,12 +258,30 @@ const Horario* voo_get_actual_departure(const Voo *voo);
 const char* voo_get_airline(const Voo *voo);
 
 /**
+ * @brief Obtém o URL de tracking do voo.
+ *
+ * @param voo Voo.
+ * @return String com o URL (propriedade do voo; não libertar).
+ */
+const char* voo_get_tracking_url(const Voo *voo);
+
+/**
  * @brief Valida o formato de um identificador de voo.
  *
  * @param s String com o id.
  * @return Valor inteiro indicando validade (0/1 conforme implementação).
  */
 int validar_flight_id(const char *s);
+
+/**
+ * @brief Escreve um resumo do voo para um buffer.
+ *
+ * @param voo Voo.
+ * @param buf Buffer de saída.
+ * @param bufsize Tamanho do buffer.
+ * @return Inteiro de estado (por convenção, 0/1 conforme implementação).
+ */
+int voo_summary(const Voo *voo, char *buf, size_t bufsize);
 
 // Diferença, em minutos, entre a hora real e estimada de partida (actualdeparture - departure).
 // Útil para queries que calculam atraso sem expor a estrutura interna de Horario.

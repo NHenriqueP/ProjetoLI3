@@ -173,6 +173,10 @@ const char* voo_get_id(const Voo *voo) {
 	return NULL;
 }
 
+const Horario* voo_get_departure(const Voo *voo) {
+	return voo ? &voo->departure : NULL;
+}
+
 Status voo_get_status(const Voo *voo) {
 	return voo ? voo->estado : ON_TIME;
 }

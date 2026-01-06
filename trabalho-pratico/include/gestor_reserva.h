@@ -54,4 +54,14 @@ guint reserva_ptr_manager_count(const ReservaPtrManager *manager);
  */
 const Reserva* reserva_ptr_manager_get(const ReservaPtrManager *manager, guint index);
 
+// Procura por id da reserva (retorna NULL se não existir)
+/**
+ * @brief Procura uma reserva por identificador.
+ *
+ * @param manager Gestor de reservas.
+ * @param id Identificador da reserva.
+ * @return Ponteiro para a reserva, ou `NULL` se não existir.
+ */
+const Reserva* reserva_ptr_manager_find_by_id(const ReservaPtrManager *manager, const char *id);
+
 #endif
